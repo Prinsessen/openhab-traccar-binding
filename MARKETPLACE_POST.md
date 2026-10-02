@@ -88,7 +88,7 @@ If you have been running an earlier build with webhooks enabled, assume your
 
 ## Resources
 
-- **Download JAR (v1.1.0):** [org.openhab.binding.traccar-5.2.0-SNAPSHOT.jar](https://github.com/Prinsessen/openhab-traccar-binding/releases/download/v1.1.0/org.openhab.binding.traccar-5.2.0-SNAPSHOT.jar)
+- **Download JAR (v1.1.1):** [org.openhab.binding.traccar-1.1.1.jar](https://github.com/Prinsessen/openhab-traccar-binding/releases/download/v1.1.1/org.openhab.binding.traccar-1.1.1.jar)
 - **Source code:** [github.com/Prinsessen/openhab-traccar-binding](https://github.com/Prinsessen/openhab-traccar-binding)
 - **Worked examples:** [EXAMPLES.md](https://github.com/Prinsessen/openhab-traccar-binding/blob/main/EXAMPLES.md) — geofencing, presence, speed, battery, multi-vehicle, and finding out what a new device sends
 - **Full documentation:** [README.md](https://github.com/Prinsessen/openhab-traccar-binding/blob/main/README.md)
@@ -96,6 +96,3 @@ If you have been running an earlier build with webhooks enabled, assume your
 - **OBD-II guide:** [OBD-II_IMPLEMENTATION.md](https://github.com/Prinsessen/openhab-traccar-binding/blob/main/OBD-II_IMPLEMENTATION.md)
 - **Changelog:** [CHANGELOG.md](https://github.com/Prinsessen/openhab-traccar-binding/blob/main/CHANGELOG.md)
 - **License:** EPL-2.0
-
-<!-- Before posting: the v1.1.0 tag exists; create the GitHub Release from it
-     and attach the JAR, then this download link resolves. -->

@@ -166,7 +166,7 @@ Name channel explicitly clears to UNDEF when beacon doesn't send a name, prevent
 - **Binding Version**: 5.2.0-SNAPSHOT
 - **Documentation Created**: January 20, 2026
 - **Author**: Nanna Agesen <Nanna@agesen.dk>
-- **OpenHAB Version**: 4.x, 5.x compatible
+- **OpenHAB Version**: 5.x (built against the 5.2 add-ons reactor; not tried on 4.x)
 
 ## Support & Contributing
 

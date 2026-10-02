@@ -5,6 +5,30 @@ All notable changes to the Traccar binding will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2026-10-02
+
+### Fixed
+- The bundled `examples/vehicle_tracker.html` now uses documentation values
+  like the rest of the examples. 1.1.0's documentation pass covered the
+  repository, but this file ships *inside* the JAR, and the artifact published
+  as 1.1.0 had been built before that pass - so the download still carried the
+  old sample names while the source tree did not. If you installed 1.1.0, this
+  is the only difference.
+- Corrected the stated openHAB compatibility. This binding is built against the
+  5.2 add-ons reactor and has only ever been run there. `docs/INDEX.md` and the
+  1.1.0 release notes also claimed 4.x, which was never tested and generally
+  will not resolve on a 4.x core.
+- Beacon examples use one consistent set of kit names throughout, instead of
+  two.
+
+### Changed
+- The release asset is named for its version,
+  `org.openhab.binding.traccar-1.1.1.jar`, rather than carrying the build
+  reactor's `5.2.0-SNAPSHOT` name as 1.0.0 and 1.1.0 did. Two downloads called
+  the same thing cannot be told apart, which is how the stale 1.1.0 artifact
+  went unnoticed. Install it exactly as before - drop it into
+  `/usr/share/openhab/addons/`; openHAB does not care what the file is called.
+
 ## [1.1.0] - 2026-10-02
 
 ### Added
