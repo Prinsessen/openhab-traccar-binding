@@ -30,7 +30,9 @@ So `raw-attributes` shows the lot, sorted, as `name=value` pairs. Fit the hardwa
 - A Traccar server, cloud or self-hosted, reachable from openHAB
 - An account on it with API access
 - For webhook push: a port openHAB can listen on, and Traccar configured to forward to it
-- openHAB 4.x or 5.x
+- openHAB 5.x. Built against the 5.2 add-ons reactor and running there; it has
+  not been tried on 4.x, and an add-on built against 5.2 generally will not
+  resolve on an older core
 
 ## Supported Things
 
@@ -49,7 +51,7 @@ Bridge traccar:server:gpsserver "Traccar Server" [
     refreshInterval=30,
     webhookPort=8088
 ] {
-    Thing device car "Car" [ deviceId="866000000000000" ]
+    Thing device car "Car" [ deviceId="350000000000000" ]
 }
 ```
 
@@ -88,6 +90,7 @@ If you have been running an earlier build with webhooks enabled, assume your
 
 - **Download JAR (v1.1.0):** [org.openhab.binding.traccar-5.2.0-SNAPSHOT.jar](https://github.com/Prinsessen/openhab-traccar-binding/releases/download/v1.1.0/org.openhab.binding.traccar-5.2.0-SNAPSHOT.jar)
 - **Source code:** [github.com/Prinsessen/openhab-traccar-binding](https://github.com/Prinsessen/openhab-traccar-binding)
+- **Worked examples:** [EXAMPLES.md](https://github.com/Prinsessen/openhab-traccar-binding/blob/main/EXAMPLES.md) — geofencing, presence, speed, battery, multi-vehicle, and finding out what a new device sends
 - **Full documentation:** [README.md](https://github.com/Prinsessen/openhab-traccar-binding/blob/main/README.md)
 - **BLE beacon quick start:** [docs/beacon-quickstart.md](https://github.com/Prinsessen/openhab-traccar-binding/blob/main/docs/beacon-quickstart.md)
 - **OBD-II guide:** [OBD-II_IMPLEMENTATION.md](https://github.com/Prinsessen/openhab-traccar-binding/blob/main/OBD-II_IMPLEMENTATION.md)
