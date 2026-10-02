@@ -538,7 +538,7 @@ openhab> log:set TRACE org.openhab.binding.traccar  # For full detail
 **Webhook server**:
 ```
 [INFO] Webhook server started on port 8090
-[INFO] Received webhook (POST): {"position":...}
+[DEBUG] Received webhook (POST): {"position":...}
 [INFO] Processing webhook position update
 [INFO] Processing webhook event type: geofenceEnter
 ```
@@ -655,6 +655,15 @@ cp /etc/openhab-addons/bundles/org.openhab.binding.traccar/src/main/resources/OH
 ```
 
 ## Adding New Channels
+
+**Find out what the device actually sends before naming anything.** Set the
+`raw-attributes` channel on the thing and read it: it prints every attribute
+Traccar decoded, sorted. Teltonika's AVL IO numbers are per-peripheral, so the
+same number means different things from different hardware - `io38` here is
+OBD-II vehicle speed from a Bluetooth dongle, while AVL ID 38 from a CAN adapter
+is Control State Flags. Naming a channel from a protocol table rather than from
+an observation is how you get a channel that is confidently wrong.
+
 
 ### 1. Add constant to `TraccarBindingConstants.java`:
 ```java

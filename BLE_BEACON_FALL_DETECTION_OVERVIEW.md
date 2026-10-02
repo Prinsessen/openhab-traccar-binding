@@ -40,7 +40,7 @@ Only when these align in a bad way do you get the alert. Genius.
 ### The Real-World Scenarios
 
 **Scenario 1: The Mountain Pass Disaster (That Never Happened)**
-You're hammering through elevation changes, leaning into switchbacks, having the time of your life. A strap fails. The Backcountry starts to slip. Within 30 seconds of it hitting 45 degrees, your phone buzzes: "ALERT: Backcountry bag detected fall! GPS: 57.0921,9.5245"
+You're hammering through elevation changes, leaning into switchbacks, having the time of your life. A strap fails. The Backcountry starts to slip. Within 30 seconds of it hitting 45 degrees, your phone buzzes: "ALERT: Backcountry bag detected fall! GPS: 55.6761,12.5683"
 
 You pull over, check your bike, and sure enough—the mounting clip is loose. You catch it before it actually falls off. Crisis averted.
 

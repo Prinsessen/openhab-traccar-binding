@@ -130,7 +130,7 @@ The binding automatically discovers devices configured in your Traccar server:
 
 | Channel | Type | Description | Example State |
 |---------|------|-------------|---------------|
-| `position` | Location | GPS coordinates (lat, lon, altitude) | 57.0921333,9.5253683 |
+| `position` | Location | GPS coordinates (lat, lon, altitude) | 55.6761,12.5683 |
 | `altitude` | Number:Length | Altitude/elevation above sea level | 45.2 m |
 | `speed` | Number:Speed | Current speed (converted to configured unit) | 65.5 km/h |
 | `course` | Number:Angle | Direction/heading (0-359°) | 135° |
@@ -184,6 +184,25 @@ The binding automatically discovers devices configured in your Traccar server:
 | `geofenceEvent` | String | Event type | geofenceEnter/geofenceExit |
 | `geofenceId` | Number | Numeric ID of triggered geofence | 1 |
 | `geofenceName` | String | Name of triggered geofence | "Home" |
+
+### Diagnostics
+
+| Channel | Type | Description | Example State |
+|---------|------|-------------|---------------|
+| `raw-attributes` | String | Every attribute Traccar decoded, sorted, as `name=value` | `batteryLevel=71.0, distance=1.19, hours=3600000, motion=true` |
+
+Advanced and read-only. The named channels above cover roughly thirty
+attributes; a device that sends anything else is sending it into a map this
+binding never reads. This channel shows the lot.
+
+It earns its place the first time you fit an unfamiliar peripheral, because
+Teltonika's AVL IO numbers are **per-peripheral**. `io38` from a Bluetooth OBD
+dongle is vehicle speed; AVL ID 38 from a CAN adapter is Control State Flags.
+The same number, two unrelated meanings, and no published table will tell you
+which one your hardware is using. So: fit it, read this channel, see what
+actually arrives, and only then decide what deserves a channel of its own.
+
+Truncated past 4000 characters, so one chatty device cannot fill an item.
 
 ### BLE Beacon Tracking (Teltonika FMM920)
 
@@ -264,7 +283,7 @@ Bridge traccar:server:gpsserver "GPS Server" [
 // First, discover your beacon MAC addresses
 // Check logs: grep "Found tag.*with MAC" /var/log/openhab/openhab.log
 
-Thing traccar:device:gpsserver:866088075183606 "Springfield" (traccar:server:gpsserver) [
+Thing traccar:device:gpsserver:350000000000000 "Springfield" (traccar:server:gpsserver) [
     deviceId=10,
     beacon1Mac="7cd9f413830b",  // MOSKO_Bag
     beacon2Mac="7cd9f414d0d7",  // PANNIERS
@@ -868,7 +887,7 @@ Bridge traccar:server:myserver [ webhookPort=8090 ]
 ```bash
 curl -X POST http://localhost:8090/webhook \
   -H "Content-Type: application/json" \
-  -d '{"position":{"id":1,"deviceId":1,"latitude":57.092,"longitude":9.525}}'
+  -d '{"position":{"id":1,"deviceId":1,"latitude":55.676,"longitude":12.568}}'
 ```
 
 #### 2. Monitor Webhook Traffic
@@ -947,7 +966,7 @@ tail -f /var/log/openhab/openhab.log | grep "webhook"
 
 You should see:
 ```
-[INFO] Received webhook (POST): {"position":{"latitude":57.092,...}}
+[DEBUG] Received webhook (POST): {"position":{"latitude":55.676,...}}
 [INFO] Processing webhook position update
 ```
 
@@ -964,8 +983,8 @@ You should see:
     "deviceTime": "2026-01-18T08:23:10.011+00:00",
     "fixTime": "2026-01-18T08:23:10.011+00:00",
     "valid": false,
-    "latitude": 57.0921333,
-    "longitude": 9.5253683,
+    "latitude": 55.6761,
+    "longitude": 12.5683,
     "altitude": 0.0,
     "speed": 0.0,
     "course": 0.0,
@@ -983,7 +1002,7 @@ You should see:
   "device": {
     "id": 10,
     "name": "Dream Catcher - FMM920",
-    "uniqueId": "866088075183606",
+    "uniqueId": "350000000000000",
     "status": "online"
   }
 }
@@ -1000,8 +1019,8 @@ You should see:
     "geofenceId": 1
   },
   "position": {
-    "latitude": 57.092,
-    "longitude": 9.525
+    "latitude": 55.676,
+    "longitude": 12.568
   },
   "device": {
     "id": 10,

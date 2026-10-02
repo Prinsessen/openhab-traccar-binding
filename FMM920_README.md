@@ -372,7 +372,7 @@ Use this high-level checklist to track your progress:
 - **Technical Support:** Via Teltonika website
 
 ### Traccar Resources:
-- **Your Traccar Server:** https://gps.agesen.dk
+- **Your Traccar Server:** https://traccar.example.com
 - **Traccar Documentation:** https://www.traccar.org/documentation/
 - **Traccar Forum:** https://www.traccar.org/forums/
 

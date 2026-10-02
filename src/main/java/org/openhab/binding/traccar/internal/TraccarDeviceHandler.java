@@ -17,6 +17,7 @@ import static org.openhab.binding.traccar.internal.TraccarBindingConstants.*;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 
 import javax.measure.Unit;
 
@@ -323,6 +324,30 @@ public class TraccarDeviceHandler extends BaseThingHandler {
         if (attributesObj instanceof Map<?, ?>) {
             @SuppressWarnings("unchecked")
             Map<String, Object> attributes = (Map<String, Object>) attributesObj;
+
+            /*
+             * Everything, before anything is picked out of it.
+             *
+             * Placed first on purpose: the named reads below are the thirty-odd
+             * attributes this binding happens to know, and a signal that has no
+             * read here is simply never looked at. Fitting a new peripheral
+             * means finding out what it actually sends, and this is the only
+             * place that shows it.
+             *
+             * Sorted, so two readings can be diffed by eye.
+             */
+            StringBuilder raw = new StringBuilder();
+            for (Map.Entry<String, Object> entry : new TreeMap<>(attributes).entrySet()) {
+                if (raw.length() > 0) {
+                    raw.append(", ");
+                }
+                raw.append(entry.getKey()).append('=').append(entry.getValue());
+                if (raw.length() > RAW_ATTRIBUTES_MAX) {
+                    raw.append(" …(truncated)");
+                    break;
+                }
+            }
+            updateState(CHANNEL_RAW_ATTRIBUTES, new StringType(raw.toString()));
 
             // Battery level
             Object batteryObj = attributes.get("batteryLevel");

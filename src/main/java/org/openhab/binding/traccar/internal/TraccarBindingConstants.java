@@ -92,6 +92,25 @@ public class TraccarBindingConstants {
     public static final String CHANNEL_IO205 = "io205";
     public static final String CHANNEL_IO389 = "io389";
 
+    /*
+     * Every attribute Traccar decoded, sorted, as one string.
+     *
+     * The named reads in the handler take about thirty of them and the rest
+     * were never looked at - not filtered, just never asked for. This channel
+     * shows the lot, so a new peripheral's signals can be identified from what
+     * ACTUALLY arrives instead of from a protocol table. That matters because
+     * the ID space is per-peripheral: io38 here is OBD-II vehicle speed from a
+     * Bluetooth OBD dongle, while AVL ID 38 on a CAN adapter is Control State
+     * Flags. The same number, two unrelated meanings.
+     *
+     * It is how io42 came to be known at all - see the comment on it in the
+     * handler: "Varies 84-94 (possibly intake air temperature)".
+     */
+    public static final String CHANNEL_RAW_ATTRIBUTES = "raw-attributes";
+
+    /* A cap, so one chatty device cannot post a megabyte into an item. */
+    public static final int RAW_ATTRIBUTES_MAX = 4000;
+
     // Bluetooth Beacon Channels (Teltonika FMM920 optional accessory)
     // Beacon 1
     public static final String CHANNEL_BEACON1_RSSI = "beacon1-rssi";

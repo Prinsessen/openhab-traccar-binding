@@ -98,7 +98,16 @@ public class TraccarWebhookServer {
                 // For POST requests, read JSON from body
                 if ("POST".equals(request.getMethod())) {
                     body = new String(request.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-                    logger.info("Received webhook (POST): {}", body);
+                    /*
+                     * DEBUG, not INFO, and this is a security fix rather than
+                     * tidiness. The body is the whole Traccar payload, and for
+                     * a phone-tracked device that includes the device's
+                     * notificationTokens - a Firebase push credential - along
+                     * with its name and exact coordinates. At INFO it was
+                     * written to openhab.log on every webhook, which for an
+                     * OsmAnd device is every few seconds.
+                     */
+                    logger.debug("Received webhook (POST): {}", body);
                     eventData = gson.fromJson(body, new TypeToken<Map<String, Object>>() {
                     }.getType());
                 }
@@ -106,7 +115,7 @@ public class TraccarWebhookServer {
                 else if ("GET".equals(request.getMethod())) {
                     String jsonParam = request.getParameter("json");
                     if (jsonParam != null && !jsonParam.isEmpty()) {
-                        logger.info("Received webhook (GET): {}", jsonParam);
+                        logger.debug("Received webhook (GET): {}", jsonParam);   // see above: carries credentials
                         eventData = gson.fromJson(jsonParam, new TypeToken<Map<String, Object>>() {
                         }.getType());
                     } else {
@@ -119,9 +128,9 @@ public class TraccarWebhookServer {
                     if (eventObj instanceof Map<?, ?>) {
                         @SuppressWarnings("unchecked")
                         Map<String, Object> event = (Map<String, Object>) eventObj;
-                        logger.info("Processing webhook event type: {}", event.get("type"));
+                        logger.debug("Processing webhook event type: {}", event.get("type"));
                     } else {
-                        logger.info("Processing webhook position update");
+                        logger.debug("Processing webhook position update");
                     }
                     serverHandler.handleWebhookEvent(eventData);
                 }

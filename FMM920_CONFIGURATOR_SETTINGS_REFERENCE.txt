@@ -159,7 +159,7 @@ SECTION 2: GPRS SETTINGS
 Tab: GPRS → GPRS
 
 [✓] Domain
-    Value: gps.agesen.dk
+    Value: traccar.example.com
     Note: Replace with YOUR Traccar server domain/IP
     
 [✓] Port

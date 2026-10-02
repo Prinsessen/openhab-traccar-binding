@@ -9,6 +9,7 @@
 | **[DEVELOPER-REFERENCE.md](DEVELOPER-REFERENCE.md)** | Technical reference card | Developers | 317 |
 | **[BEACON-DOCUMENTATION-SUMMARY.md](BEACON-DOCUMENTATION-SUMMARY.md)** | Implementation overview | Maintainers | 351 |
 | **[../README.md](../README.md)** | Main binding documentation | All users | 1818 |
+| **[../MARKETPLACE_POST.md](../MARKETPLACE_POST.md)** | Community forum post | Maintainers (publishing) | 102 |
 
 ## Documentation Hierarchy
 

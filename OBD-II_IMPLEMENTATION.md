@@ -7,7 +7,7 @@ This document details the implementation of OBD-II (On-Board Diagnostics) channe
 ## Hardware Setup
 
 - **Vehicle**: Motorcycle (Springfield)
-- **GPS Tracker**: Teltonika FMM920 (IMEI: 866088075183606)
+- **GPS Tracker**: Teltonika FMM920 (IMEI: 350000000000000)
 - **OBD-II Dongle**: Bluetooth ELM327/STN1110 compatible (ODBLink MX+ recommended)
 - **Connection**: Dongle paired with FMM920 via Bluetooth, transmits as AVL IO parameters
 
@@ -425,35 +425,35 @@ Located in `traccar.items`:
 
 ```openhab
 // OBD-II Items
-Number Vehicle10_ObdDtcCount "DTC Count [%d]" <error> (gVehicle10) {channel="traccar:device:gpsserver:866088075183606:obdDtcCount"}
-Number:Dimensionless Vehicle10_ObdEngineLoad "Engine Load [%.1f %%]" <pressure> (gVehicle10) {channel="traccar:device:gpsserver:866088075183606:obdEngineLoad"}
-Number:Temperature Vehicle10_ObdCoolantTemp "Coolant Temp [%.1f %unit%]" <temperature> (gVehicle10) {channel="traccar:device:gpsserver:866088075183606:obdCoolantTemp"}
-Number:Dimensionless Vehicle10_ObdShortFuelTrim "Fuel Trim [JS(fuelTrim.js):%s] (%.1f %%)" <line> (gVehicle10) {channel="traccar:device:gpsserver:866088075183606:obdShortFuelTrim"}
-Number:Pressure Vehicle10_ObdFuelPressure "Fuel Pressure [%.0f kPa]" <pressure> (gVehicle10) {channel="traccar:device:gpsserver:866088075183606:obdFuelPressure", unit="kPa"}
-Number Vehicle10_ObdRpm "RPM" <qualityofservice> (gVehicle10) {channel="traccar:device:gpsserver:866088075183606:obdRpm"}
-Number:Speed Vehicle10_ObdSpeed "Speed [%.0f km/h]" <speed> (gVehicle10) {channel="traccar:device:gpsserver:866088075183606:obdSpeed"}
-Number:Dimensionless Vehicle10_ObdFuelLevel "Fuel Level [%.1f %%]" <oil> (gVehicle10) {channel="traccar:device:gpsserver:866088075183606:obdFuelLevel"}
+Number Vehicle10_ObdDtcCount "DTC Count [%d]" <error> (gVehicle10) {channel="traccar:device:gpsserver:350000000000000:obdDtcCount"}
+Number:Dimensionless Vehicle10_ObdEngineLoad "Engine Load [%.1f %%]" <pressure> (gVehicle10) {channel="traccar:device:gpsserver:350000000000000:obdEngineLoad"}
+Number:Temperature Vehicle10_ObdCoolantTemp "Coolant Temp [%.1f %unit%]" <temperature> (gVehicle10) {channel="traccar:device:gpsserver:350000000000000:obdCoolantTemp"}
+Number:Dimensionless Vehicle10_ObdShortFuelTrim "Fuel Trim [JS(fuelTrim.js):%s] (%.1f %%)" <line> (gVehicle10) {channel="traccar:device:gpsserver:350000000000000:obdShortFuelTrim"}
+Number:Pressure Vehicle10_ObdFuelPressure "Fuel Pressure [%.0f kPa]" <pressure> (gVehicle10) {channel="traccar:device:gpsserver:350000000000000:obdFuelPressure", unit="kPa"}
+Number Vehicle10_ObdRpm "RPM" <qualityofservice> (gVehicle10) {channel="traccar:device:gpsserver:350000000000000:obdRpm"}
+Number:Speed Vehicle10_ObdSpeed "Speed [%.0f km/h]" <speed> (gVehicle10) {channel="traccar:device:gpsserver:350000000000000:obdSpeed"}
+Number:Dimensionless Vehicle10_ObdFuelLevel "Fuel Level [%.1f %%]" <oil> (gVehicle10) {channel="traccar:device:gpsserver:350000000000000:obdFuelLevel"}
 
 // Trip Meters
-Number:Length Vehicle10_Io199 "Trip 1 [%.1f km]" <line> (gVehicle10) {channel="traccar:device:gpsserver:866088075183606:io199", unit="km"}
-Number:Length Vehicle10_Io205 "Trip 2 [%.1f km]" <line> (gVehicle10) {channel="traccar:device:gpsserver:866088075183606:io205", unit="km"}
-Number:Length Vehicle10_Io389 "Total ECU Mileage [%.1f km]" <line> (gVehicle10) {channel="traccar:device:gpsserver:866088075183606:io389", unit="km"}
+Number:Length Vehicle10_Io199 "Trip 1 [%.1f km]" <line> (gVehicle10) {channel="traccar:device:gpsserver:350000000000000:io199", unit="km"}
+Number:Length Vehicle10_Io205 "Trip 2 [%.1f km]" <line> (gVehicle10) {channel="traccar:device:gpsserver:350000000000000:io205", unit="km"}
+Number:Length Vehicle10_Io389 "Total ECU Mileage [%.1f km]" <line> (gVehicle10) {channel="traccar:device:gpsserver:350000000000000:io389", unit="km"}
 
 // Tracker Device Items
-Number Vehicle10_Pdop "GPS 3D Quality [JS(pdop.js):%s]" <zoom> (gVehicle10) {channel="traccar:device:gpsserver:866088075183606:pdop"}
-Number Vehicle10_Hdop "GPS 2D Quality [JS(hdop.js):%s]" <zoom> (gVehicle10) {channel="traccar:device:gpsserver:866088075183606:hdop"}
-Number:ElectricPotential Vehicle10_Power "Power [%.2f V]" <battery> (gVehicle10) {channel="traccar:device:gpsserver:866088075183606:power"}
-Number:ElectricPotential Vehicle10_Battery "Battery [%.2f V]" <battery> (gVehicle10) {channel="traccar:device:gpsserver:866088075183606:battery"}
-String Vehicle10_Operator "Mobile Operator [MAP(operator.map):%s]" <network> (gVehicle10) {channel="traccar:device:gpsserver:866088075183606:operator"}
-String Vehicle10_Vin "VIN [%s]" <text> (gVehicle10) {channel="traccar:device:gpsserver:866088075183606:vin"}
-Number Vehicle10_Rssi "GSM Signal [%d]" <network> (gVehicle10) {channel="traccar:device:gpsserver:866088075183606:rssi"}
+Number Vehicle10_Pdop "GPS 3D Quality [JS(pdop.js):%s]" <zoom> (gVehicle10) {channel="traccar:device:gpsserver:350000000000000:pdop"}
+Number Vehicle10_Hdop "GPS 2D Quality [JS(hdop.js):%s]" <zoom> (gVehicle10) {channel="traccar:device:gpsserver:350000000000000:hdop"}
+Number:ElectricPotential Vehicle10_Power "Power [%.2f V]" <battery> (gVehicle10) {channel="traccar:device:gpsserver:350000000000000:power"}
+Number:ElectricPotential Vehicle10_Battery "Battery [%.2f V]" <battery> (gVehicle10) {channel="traccar:device:gpsserver:350000000000000:battery"}
+String Vehicle10_Operator "Mobile Operator [MAP(operator.map):%s]" <network> (gVehicle10) {channel="traccar:device:gpsserver:350000000000000:operator"}
+String Vehicle10_Vin "VIN [%s]" <text> (gVehicle10) {channel="traccar:device:gpsserver:350000000000000:vin"}
+Number Vehicle10_Rssi "GSM Signal [%d]" <network> (gVehicle10) {channel="traccar:device:gpsserver:350000000000000:rssi"}
 
 // Experimental Items
-Number:Temperature Vehicle10_Io42 "Intake Air Temp [%.1f %unit%]" <temperature> (gVehicle10) {channel="traccar:device:gpsserver:866088075183606:io42"}
-Number:Dimensionless Vehicle10_Io49 "Throttle [%.1f %%]" <pressure> (gVehicle10) {channel="traccar:device:gpsserver:866088075183606:io49"}
-Number Vehicle10_Io51 "Fuel Type [%d]" <oil> (gVehicle10) {channel="traccar:device:gpsserver:866088075183606:io51"}
-Number:Length Vehicle10_TripDistance "Trip Distance [%.1f km]" <line> (gVehicle10) {channel="traccar:device:gpsserver:866088075183606:tripDistance", unit="km"}
-Number Vehicle10_EventCode "Event Code [%d]" <text> (gVehicle10) {channel="traccar:device:gpsserver:866088075183606:eventCode"}
+Number:Temperature Vehicle10_Io42 "Intake Air Temp [%.1f %unit%]" <temperature> (gVehicle10) {channel="traccar:device:gpsserver:350000000000000:io42"}
+Number:Dimensionless Vehicle10_Io49 "Throttle [%.1f %%]" <pressure> (gVehicle10) {channel="traccar:device:gpsserver:350000000000000:io49"}
+Number Vehicle10_Io51 "Fuel Type [%d]" <oil> (gVehicle10) {channel="traccar:device:gpsserver:350000000000000:io51"}
+Number:Length Vehicle10_TripDistance "Trip Distance [%.1f km]" <line> (gVehicle10) {channel="traccar:device:gpsserver:350000000000000:tripDistance", unit="km"}
+Number Vehicle10_EventCode "Event Code [%d]" <text> (gVehicle10) {channel="traccar:device:gpsserver:350000000000000:eventCode"}
 ```
 
 ### 5. Sitemap Configuration

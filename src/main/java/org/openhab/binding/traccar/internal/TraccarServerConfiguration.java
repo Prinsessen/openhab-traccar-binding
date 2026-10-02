@@ -19,7 +19,7 @@ package org.openhab.binding.traccar.internal;
  */
 public class TraccarServerConfiguration {
 
-    public String url = "https://gps.agesen.dk";
+    public String url = "https://traccar.example.com";
     public String username = "";
     public String password = "";
     public int refreshInterval = 60;

@@ -13,8 +13,8 @@
 			<parameter name="url" type="text" required="true">
 				<context>url</context>
 				<label>Server URL</label>
-				<description>URL of the Traccar server (e.g., https://gps.agesen.dk)</description>
-				<default>https://gps.agesen.dk</default>
+				<description>URL of the Traccar server (e.g., https://traccar.example.com)</description>
+				<default>https://traccar.example.com</default>
 			</parameter>
 			<parameter name="username" type="text" required="true">
 				<label>Username</label>
@@ -165,6 +165,9 @@
 			<channel id="io199" typeId="io199"/>
 			<channel id="io205" typeId="io205"/>
 			<channel id="io389" typeId="io389"/>
+
+			<!-- Diagnostics: every attribute, named or not -->
+			<channel id="raw-attributes" typeId="raw-attributes"/>
 
 			<!-- Beacon 1 Channels (Teltonika FMM920 optional BLE accessory) -->
 			<channel id="beacon1-rssi" typeId="beacon-rssi"/>
@@ -580,6 +583,16 @@
 		<label>Trip 2</label>
 		<description>Trip odometer 2 from bike ECU - AVL ID 205</description>
 		<state readOnly="true" pattern="%.1f %unit%"/>
+	</channel-type>
+
+	<channel-type id="raw-attributes" advanced="true">
+		<item-type>String</item-type>
+		<label>Raw Attributes</label>
+		<description>Every attribute Traccar decoded for this device, sorted, as name=value pairs. A
+			diagnostic: the named channels cover about thirty attributes and anything else is never
+			looked at, so this is how a new peripheral's signals are identified - from what actually
+			arrives rather than from a protocol table. Truncated past 4000 characters.</description>
+		<state readOnly="true"/>
 	</channel-type>
 
 	<channel-type id="io389">

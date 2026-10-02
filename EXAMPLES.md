@@ -736,7 +736,7 @@ Bridge traccar:server:global "Traccar Global" [
 ```
 
 **Example address output:**
-- **Denmark**: `Kirkegade 50, 9460 Brovst, North Denmark Region, Denmark`
+- **Denmark**: `Rådhuspladsen 1, 1550 Copenhagen, Capital Region, Denmark`
 - **Greece**: `Leof. Vasilissis Sofias 2, 106 74 Athens, Attica, Greece` (not Λεωφ. Βασιλίσσης Σοφίας)
 - **Russia**: `Krasnaya ploshchad 1, 109012 Moscow, Moscow, Russia` (not Красная площадь)
 - **China**: `Dong Chang'an Jie, 100006 Beijing, Beijing, China` (not 东长安街)
@@ -784,7 +784,7 @@ Bridge traccar:server:denmark "Traccar Denmark" [
 }
 ```
 
-**Address output**: `Kirkegade 50, 9460 Brovst, Region Nordjylland, Danmark`
+**Address output**: `Rådhuspladsen 1, 1550 København, Region Hovedstaden, Danmark`
 
 **Supported languages**: `en` (English), `da` (Danish), `de` (German), `fr` (French), `es` (Spanish)
 
@@ -1120,7 +1120,7 @@ The HTML email includes:
 ```
 LUGGAGE FALL DETECTED at 22/01 14:09:51. 
 Main Street, City. 
-Google Maps: https://maps.google.com/?q=57.092,9.525
+Google Maps: https://maps.google.com/?q=55.676,12.568
 ```
 
 ### Troubleshooting

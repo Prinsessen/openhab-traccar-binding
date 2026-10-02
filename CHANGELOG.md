@@ -5,6 +5,51 @@ All notable changes to the Traccar binding will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-10-02
+
+### Added
+- `raw-attributes` channel on the device thing: every attribute Traccar decoded,
+  sorted, as `name=value` pairs. The named channels cover about thirty
+  attributes and anything else was never looked at, so this is how a new
+  peripheral's signals are identified — from what actually arrives rather than
+  from a protocol table. Advanced, read-only, truncated past 4000 characters.
+
+  Added while preparing for a CAN adapter, where the need is sharp: AVL IO
+  numbers mean different things per peripheral. `io38` in this binding is
+  OBD-II vehicle speed from a Bluetooth dongle, while AVL ID 38 on a CAN
+  adapter is Control State Flags — the same number, two unrelated meanings. The
+  only safe way to map a new device is to look at what it sends.
+
+### Changed
+- **The default Traccar server URL is now `https://traccar.example.com`.** It
+  used to be a real private server, both in `TraccarServerConfiguration` and as
+  the `<default>` in `thing-types.xml`, so every installation offered a
+  stranger's host as its suggested value. Existing things are unaffected; only
+  the suggestion changes.
+
+### Fixed
+- **Beacon name persistence** (from 2026-01-21, never released): beacon names
+  now survive an openHAB restart. They are stored in Thing properties and
+  restored, so `beacon-name` keeps showing the last known name even when the
+  beacon is out of range or absent from a webhook update.
+- Documentation and examples no longer carry a real home address, real home
+  coordinates or a real device IMEI. They were used as sample values throughout
+  the README, EXAMPLES, the OBD-II guide and the bundled `vehicle_tracker.html`.
+  Replaced with a documentation address, Copenhagen city centre and
+  `350000000000000`.
+- Removed `FMM920_current.txt`, a complete dump of one physical tracker's
+  configuration: geofence coordinates, a Bluetooth MAC, authorised key
+  identifiers and a telematics gateway channel id. Of no use to anyone but its
+  owner.
+
+### Security
+- Webhook payload logging moved from INFO to DEBUG. The body is the complete
+  Traccar payload and, for a phone-tracked device, includes the device's
+  `notificationTokens` — a Firebase push credential — together with its name and
+  exact coordinates. At INFO this was written to `openhab.log` on every webhook,
+  which for an OsmAnd device is every few seconds. Anyone running this binding
+  with webhooks enabled should assume their logs contain those tokens.
+
 ## [1.0.0] - 2026-01-17
 
 ### Added
@@ -57,12 +102,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Author
 - Nanna Agesen (Nanna@agesen.dk / @Prinsessen)
 
-## [Unreleased]
-
-### Fixed
-- **[2026-01-21] Beacon Name Persistence**: Beacon names now persist across openHAB restarts. Previously, beacon names would reset when the binding restarted. Now names are stored in Thing properties and automatically restored, ensuring the `beacon-name` channels always display the last known name even when the beacon is out of range or not included in webhook updates.
-
-### Planned Features
+## Planned Features
 - Support for Traccar commands (send commands to devices)
 - Driver behavior analysis channels
 - Maintenance tracking and alerts

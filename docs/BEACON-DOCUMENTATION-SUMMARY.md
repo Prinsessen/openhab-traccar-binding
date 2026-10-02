@@ -279,7 +279,7 @@ Added 4 beacon MAC configuration parameters:
 **traccar.things** (example):
 
 ```openhab
-Thing traccar:device:gpsserver:866088075183606 "Springfield" (traccar:server:gpsserver) [
+Thing traccar:device:gpsserver:350000000000000 "Springfield" (traccar:server:gpsserver) [
     deviceId=10,
     beacon1Mac="7cd9f413830b",
     beacon2Mac="7cd9f414d0d7",
