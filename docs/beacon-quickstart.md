@@ -27,9 +27,9 @@ tail -f /var/log/openhab/openhab.log | grep "Found tag.*with MAC"
 
 You'll see:
 ```
-[DEBUG] Found tag1 with MAC 7cd9f413830b
-[DEBUG] Found tag2 with MAC 7cd9f414d0d7
-[DEBUG] Found tag3 with MAC 7cd9f4128704
+[DEBUG] Found tag1 with MAC aabbcc112233
+[DEBUG] Found tag2 with MAC aabbcc445566
+[DEBUG] Found tag3 with MAC aabbcc778899
 ```
 
 **Write down these MACs** - you need them for the next step.
@@ -46,9 +46,9 @@ Bridge traccar:server:gpsserver "GPS Server" [
 ] {
     Thing device motorcycle "Motorcycle" [
         deviceId=10,                     // Your device ID from Traccar
-        beacon1Mac="7cd9f413830b",      // Replace with your MACs
-        beacon2Mac="7cd9f414d0d7",
-        beacon3Mac="7cd9f4128704"
+        beacon1Mac="aabbcc112233",      // Replace with your MACs
+        beacon2Mac="aabbcc445566",
+        beacon3Mac="aabbcc778899"
     ]
 }
 ```
@@ -163,7 +163,7 @@ sitemap beacons label="Cargo Tracking" {
 
 **Data shuffling between beacons?**
 - Ensure you configured `beacon1Mac`, `beacon2Mac` in thing config
-- MACs must be lowercase without colons: `7cd9f413830b` ✓, not `7C:D9:F4:13:83:0B` ✗
+- MACs must be lowercase without colons: `aabbcc112233` ✓, not `AA:BB:CC:11:22:33` ✗
 
 **Distance seems wrong?**
 - Adjust thing config:
@@ -183,7 +183,7 @@ sitemap beacons label="Cargo Tracking" {
 
 ## Why This Works
 
-The FMM920 assigns beacons to `tag1-4` **randomly** based on scan order. Without MAC routing, your "MOSKO_Bag" could appear as beacon1 one minute and beacon3 the next.
+The FMM920 assigns beacons to `tag1-4` **randomly** based on scan order. Without MAC routing, your "MainBag" could appear as beacon1 one minute and beacon3 the next.
 
 The binding's MAC routing feature maps each beacon's MAC address to a consistent slot (beacon1-4), so your UI and automation work reliably.
 

@@ -6,7 +6,7 @@ This document details the implementation of OBD-II (On-Board Diagnostics) channe
 
 ## Hardware Setup
 
-- **Vehicle**: Motorcycle (Springfield)
+- **Vehicle**: Motorcycle (Motorcycle)
 - **GPS Tracker**: Teltonika FMM920 (IMEI: 350000000000000)
 
 > **Identifying an unknown IO number.** The numbers below were worked out by
@@ -469,7 +469,7 @@ Number Vehicle10_EventCode "Event Code [%d]" <text> (gVehicle10) {channel="tracc
 Located in `myhouse.sitemap`:
 
 ```openhab
-Frame label="Springfield (Tracker)" {
+Frame label="Motorcycle (Tracker)" {
     // ... GPS data ...
     
     Text label="OBD-II Data" {

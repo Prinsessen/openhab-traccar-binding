@@ -117,7 +117,7 @@ The binding automatically discovers devices configured in your Traccar server:
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
 | `deviceId` | integer | Yes | - | Traccar device ID |
-| `beacon1Mac` | text | No | - | MAC address to assign to beacon1 slot (e.g., 7cd9f413830b) |
+| `beacon1Mac` | text | No | - | MAC address to assign to beacon1 slot (e.g., aabbcc112233) |
 | `beacon2Mac` | text | No | - | MAC address to assign to beacon2 slot |
 | `beacon3Mac` | text | No | - | MAC address to assign to beacon3 slot |
 | `beacon4Mac` | text | No | - | MAC address to assign to beacon4 slot |
@@ -216,8 +216,8 @@ The binding supports tracking up to **4 Bluetooth Low Energy (BLE) beacons** sim
 
 | Channel | Type | Description | Example State |
 |---------|------|-------------|---------------|
-| `beacon1-mac` | String | Beacon MAC address | 7cd9f413830b |
-| `beacon1-name` | String | Beacon name (if configured in beacon) | MOSKO_Bag |
+| `beacon1-mac` | String | Beacon MAC address | aabbcc112233 |
+| `beacon1-name` | String | Beacon name (if configured in beacon) | MainBag |
 | `beacon1-rssi` | Number | Signal strength in dBm (-30 = very close, -90 = far) | -55 |
 | `beacon1-distance` | Number:Length | Calculated distance from vehicle (meters) | 1.2 m |
 | `beacon1-battery` | Number:ElectricPotential | Beacon battery voltage | 2.87 V |
@@ -283,16 +283,16 @@ Bridge traccar:server:gpsserver "GPS Server" [
 // First, discover your beacon MAC addresses
 // Check logs: grep "Found tag.*with MAC" /var/log/openhab/openhab.log
 
-Thing traccar:device:gpsserver:350000000000000 "Springfield" (traccar:server:gpsserver) [
+Thing traccar:device:gpsserver:350000000000000 "Motorcycle" (traccar:server:gpsserver) [
     deviceId=10,
-    beacon1Mac="7cd9f413830b",  // MOSKO_Bag
-    beacon2Mac="7cd9f414d0d7",  // PANNIERS
-    beacon3Mac="7cd9f4128704"   // OXFORD_Bag
+    beacon1Mac="aabbcc112233",  // MainBag
+    beacon2Mac="aabbcc445566",  // SideBags
+    beacon3Mac="aabbcc778899"   // RearBag
 ]
 ```
 
 **Important Notes**:
-- MAC addresses must be lowercase hex without colons (e.g., `7cd9f413830b`, not `7C:D9:F4:13:83:0B`)
+- MAC addresses must be lowercase hex without colons (e.g., `aabbcc112233`, not `AA:BB:CC:11:22:33`)
 - After adding/changing MAC configuration, restart openHAB or reload the thing: `openhab-cli reload-thing traccar:device:gpsserver:DEVICEID`
 - Unconfigured beacons will automatically take first available slot (works great for most use cases)
 - Name channel clears automatically when beacon has no configured name (fixes stale data)
@@ -313,9 +313,9 @@ Bridge traccar:server:gpsserver "Traccar GPS Server" [
 ] {
     Thing device motorcycle "Motorcycle" [
         deviceId=10,
-        beacon1Mac="7cd9f413830b",
-        beacon2Mac="7cd9f414d0d7", 
-        beacon3Mac="7cd9f4128704"
+        beacon1Mac="aabbcc112233",
+        beacon2Mac="aabbcc445566", 
+        beacon3Mac="aabbcc778899"
     ]
 }
 ```
@@ -326,7 +326,7 @@ Bridge traccar:server:gpsserver "Traccar GPS Server" [
 Group gMotorcycle "Motorcycle" <motorbike>
 Group gBeacons "Cargo Beacons" (gMotorcycle) <bag>
 
-// Beacon 1 - Mosko Bag
+// Beacon 1 - MainBag Bag
 String Beacon1_Mac "Beacon 1 MAC [%s]" (gBeacons)
     {channel="traccar:device:gpsserver:motorcycle:beacon1-mac"}
 String Beacon1_Name "Beacon 1 Name [%s]" <bag> (gBeacons)
@@ -344,7 +344,7 @@ Number:Temperature Beacon1_Temperature "Beacon 1 Temperature [%.1f °C]" <temper
 Number:Dimensionless Beacon1_Humidity "Beacon 1 Humidity [%.0f %%]" <humidity> (gBeacons)
     {channel="traccar:device:gpsserver:motorcycle:beacon1-humidity"}
 
-// Beacon 2 - Panniers
+// Beacon 2 - Side bags
 String Beacon2_Mac "Beacon 2 MAC [%s]" (gBeacons)
     {channel="traccar:device:gpsserver:motorcycle:beacon2-mac"}
 String Beacon2_Name "Beacon 2 Name [%s]" <bag> (gBeacons)
@@ -358,7 +358,7 @@ Number:ElectricPotential Beacon2_Battery "Beacon 2 Battery [%.2f V]" <battery> (
 Switch Beacon2_LowBattery "Beacon 2 Low Battery" <lowbattery> (gBeacons)
     {channel="traccar:device:gpsserver:motorcycle:beacon2-lowBattery"}
 
-// Beacon 3 - Oxford Bag
+// Beacon 3 - RearBag Bag
 String Beacon3_Mac "Beacon 3 MAC [%s]" (gBeacons)
     {channel="traccar:device:gpsserver:motorcycle:beacon3-mac"}
 String Beacon3_Name "Beacon 3 Name [%s]" <bag> (gBeacons)
@@ -482,7 +482,7 @@ end
 ```openhab
 sitemap motorcycle label="Motorcycle Tracking" {
     Frame label="Cargo Beacons" {
-        Text label="Beacon 1 - Mosko Bag" icon="bag" {
+        Text label="Beacon 1 - MainBag Bag" icon="bag" {
             Text item=Beacon1_Mac label="MAC [%s]" icon="bluetooth"
             Text item=Beacon1_RSSI label="Signal [%d dBm]" icon="signal" 
                 valuecolor=[Beacon1_RSSI>-50="green", Beacon1_RSSI>-70="orange", ="red"]
@@ -495,7 +495,7 @@ sitemap motorcycle label="Motorcycle Tracking" {
             Text item=Beacon1_Humidity label="Humidity [%.0f %%]" icon="humidity"
         }
         
-        Text label="Beacon 2 - Panniers" icon="bag" {
+        Text label="Beacon 2 - Side bags" icon="bag" {
             Text item=Beacon2_Mac label="MAC [%s]" icon="bluetooth"
             Text item=Beacon2_RSSI label="Signal [%d dBm]" icon="signal"
                 valuecolor=[Beacon2_RSSI>-50="green", Beacon2_RSSI>-70="orange", ="red"]
@@ -506,7 +506,7 @@ sitemap motorcycle label="Motorcycle Tracking" {
             Switch item=Beacon2_LowBattery label="Low Battery" icon="lowbattery"
         }
         
-        Text label="Beacon 3 - Oxford Bag" icon="bag" {
+        Text label="Beacon 3 - RearBag Bag" icon="bag" {
             Text item=Beacon3_Mac label="MAC [%s]" icon="bluetooth"
             Text item=Beacon3_RSSI label="Signal [%d dBm]" icon="signal"
             Text item=Beacon3_Distance label="Distance [%.2f m]" icon="distance"
@@ -539,9 +539,9 @@ grep "Configured beacon MAC" /var/log/openhab/openhab.log | tail -10
 
 Example output:
 ```
-[DEBUG] Found tag1 with MAC 7cd9f413830b
-[DEBUG] Routing tag1 (MAC 7cd9f413830b) to beacon1
-[DEBUG] Configured beacon MAC 7cd9f413830b for slot 1
+[DEBUG] Found tag1 with MAC aabbcc112233
+[DEBUG] Routing tag1 (MAC aabbcc112233) to beacon1
+[DEBUG] Configured beacon MAC aabbcc112233 for slot 1
 ```
 
 ##### 2. Beacon Data Shuffling

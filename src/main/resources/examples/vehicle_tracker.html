@@ -233,7 +233,7 @@
                     });
                 }
                 
-                // Process Vehicle10 (Springfield - Tracker)
+                // Process Vehicle10 (Motorcycle - Tracker)
                 const items10 = {};
                 if (data10.members) {
                     data10.members.forEach(item => {
@@ -321,7 +321,7 @@
                         }
                         
                         // Update popup
-                        let popupContent = '<b>Springfield (Tracker)</b><br>';
+                        let popupContent = '<b>Motorcycle (Tracker)</b><br>';
                         if (items10.Speed) {
                             const speedValue = parseFloat(items10.Speed.split(' ')[0]);
                             popupContent += 'Speed: ' + speedValue.toFixed(1) + ' km/h<br>';
@@ -338,7 +338,7 @@
                 const status1 = items1.Status ? items1.Status : 'unknown';
                 const status10 = items10.Status ? items10.Status : 'unknown';
                 document.getElementById('status').innerHTML = 
-                    '<span class="vehicle-orange">Springfield: ' + status10 + '</span>' +
+                    '<span class="vehicle-orange">Motorcycle: ' + status10 + '</span>' +
                     ' | ' +
                     '<span class="vehicle-blue">Phone: ' + status1 + '</span>';
                 
@@ -346,13 +346,13 @@
                 const speed1 = items1.Speed ? parseFloat(items1.Speed.split(' ')[0]).toFixed(1) : '--';
                 const speed10 = items10.Speed ? parseFloat(items10.Speed.split(' ')[0]).toFixed(1) : '--';
                 document.getElementById('speed').innerHTML = 
-                    '<span class="vehicle-orange">Springfield: ' + speed10 + ' km/h</span> | ' +
+                    '<span class="vehicle-orange">Motorcycle: ' + speed10 + ' km/h</span> | ' +
                     '<span class="vehicle-blue">Phone: ' + speed1 + ' km/h</span>';
                 
-                // Format GPS satellites (only for Springfield)
+                // Format GPS satellites (only for Motorcycle)
                 const gpsSats = items10.GpsSatellites ? items10.GpsSatellites + ' sats' : '--';
                 document.getElementById('gps').innerHTML = 
-                    '<span class="vehicle-orange">Springfield: ' + gpsSats + '</span>';
+                    '<span class="vehicle-orange">Motorcycle: ' + gpsSats + '</span>';
                 
             } catch (error) {
                 console.error('Error fetching vehicle data:', error);

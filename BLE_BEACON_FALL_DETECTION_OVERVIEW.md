@@ -3,17 +3,17 @@
 
 ### The Nightmare Scenario
 
-Picture this: You're 500 miles into an epic ride on your Indian Springfield 1811cc, carving through mountain roads with your Mosko Backcountry, Stinger22, and Aux Pox loaded with thousands of dollars worth of camping gear, camera equipment, and tools. You stop for gas, grab a coffee, and head back out. Twenty miles later, you notice something's off in your mirror. The Backcountry bag is gone. Your heart sinks. When did it fall? Where? That beautiful twisty section 10 miles back? Or was it in that sketchy gas station parking lot?
+Picture this: You're 500 miles into an epic ride on your touring motorcycle, carving through mountain roads with your MainBag main bag, tank bag, and tool bag loaded with thousands of dollars worth of camping gear, camera equipment, and tools. You stop for gas, grab a coffee, and head back out. Twenty miles later, you notice something's off in your mirror. The main bag bag is gone. Your heart sinks. When did it fall? Where? That beautiful twisty section 10 miles back? Or was it in that sketchy gas station parking lot?
 
 This is the nightmare that inspired the BLE Beacon Fall Detection system—and it's never happened to me because my bags are smarter than I am.
 
 ### The "Oh Crap" Prevention System
 
-Here's the deal: I ride a Springfield 1811cc, a beautiful beast of a touring bike that's perfect for long hauls. I've got three critical bags strapped to it:
+Here's the deal: I ride a Motorcycle 1811cc, a beautiful beast of a touring bike that's perfect for long hauls. I've got three critical bags strapped to it:
 
-- **Mosko Backcountry** (Beacon1) - My main adventure bag with camping gear and clothing
-- **Stinger22** (Beacon2) - Tool roll and emergency supplies  
-- **Aux Pox** (Beacon3) - Camera gear, electronics, the expensive stuff
+- **MainBag main bag** (Beacon1) - My main adventure bag with camping gear and clothing
+- **tank bag** (Beacon2) - Tool roll and emergency supplies  
+- **tool bag** (Beacon3) - Camera gear, electronics, the expensive stuff
 
 Each bag has a tiny Teltonika EYE Beacon tucked inside—basically a smart sensor that knows which way is up. When one of these bags tilts more than 45 degrees while I'm riding (or just after), my phone screams at me with GPS coordinates so I can turn around and rescue my gear before someone else does.
 
@@ -27,7 +27,7 @@ Here's where it gets clever. This isn't some dumb tilt sensor that freaks out ev
 **"I'm parked at the campground reorganizing my gear"** 
 → System stays quiet, lets you work
 
-**"Bike's been parked for 20 minutes, now someone's messing with my Stinger22"** 
+**"Bike's been parked for 20 minutes, now someone's messing with my tank bag"** 
 → Alert! Possible theft attempt
 
 The secret? The system watches three things at once:
@@ -40,18 +40,18 @@ Only when these align in a bad way do you get the alert. Genius.
 ### The Real-World Scenarios
 
 **Scenario 1: The Mountain Pass Disaster (That Never Happened)**
-You're hammering through elevation changes, leaning into switchbacks, having the time of your life. A strap fails. The Backcountry starts to slip. Within 30 seconds of it hitting 45 degrees, your phone buzzes: "ALERT: Backcountry bag detected fall! GPS: 55.6761,12.5683"
+You're hammering through elevation changes, leaning into switchbacks, having the time of your life. A strap fails. The main bag starts to slip. Within 30 seconds of it hitting 45 degrees, your phone buzzes: "ALERT: main bag bag detected fall! GPS: 55.6761,12.5683"
 
 You pull over, check your bike, and sure enough—the mounting clip is loose. You catch it before it actually falls off. Crisis averted.
 
 **Scenario 2: The Gas Station Stop**
-You pull into a station, kill the engine, and take off your helmet. You lean over the Aux Pox to grab your wallet—tilting it way past 45 degrees. Nothing happens. Why? Because the bike's been stationary and the engine's been off for more than 15 minutes. The system knows you're just doing normal stuff.
+You pull into a station, kill the engine, and take off your helmet. You lean over the tool bag to grab your wallet—tilting it way past 45 degrees. Nothing happens. Why? Because the bike's been stationary and the engine's been off for more than 15 minutes. The system knows you're just doing normal stuff.
 
 **Scenario 3: The Sketchy Parking Lot**
-You're at a scenic overlook taking photos. The bike's been parked for 10 minutes. Someone walks up and starts examining your Stinger22 tool bag, tilting it to see what's inside. Your phone erupts: "ALERT: Stinger22 bag detected movement!" You're 50 feet away and can sprint back before they even think about unclipping it.
+You're at a scenic overlook taking photos. The bike's been parked for 10 minutes. Someone walks up and starts examining your tank bag tool bag, tilting it to see what's inside. Your phone erupts: "ALERT: tank bag bag detected movement!" You're 50 feet away and can sprint back before they even think about unclipping it.
 
 **Scenario 4: The Highway Failure**
-You're cruising at 75mph on the interstate. A mounting bolt finally gives up after 10,000 miles. The Aux Pox starts to lean. Alert hits your phone before the bag even fully detaches. You can pull over, secure it, and avoid losing $3,000 in camera gear to the highway gods.
+You're cruising at 75mph on the interstate. A mounting bolt finally gives up after 10,000 miles. The tool bag starts to lean. Alert hits your phone before the bag even fully detaches. You can pull over, secure it, and avoid losing $3,000 in camera gear to the highway gods.
 
 ### The Technical Magic (Without Getting Boring)
 
@@ -96,9 +96,9 @@ And here's the best part: After the first week, you forget it's even there. Unti
 **Total investment: ~$255**
 
 **What it protects:**
-- Mosko Backcountry bag: $400
-- Stinger22 tool roll: $150 + $500 in tools
-- Aux Pox with camera gear: $300 bag + $3,000 in electronics
+- MainBag main bag bag: $400
+- tank bag tool roll: $150 + $500 in tools
+- tool bag with camera gear: $300 bag + $3,000 in electronics
 - **Total protected value: $4,350+**
 
 **Losing just one bag to a highway failure or theft pays for the entire system 17 times over.**
@@ -116,7 +116,7 @@ Plus, let's be honest—insurance doesn't cover "I forgot to secure my luggage p
 
 ### The Bottom Line
 
-I built this system because I was tired of worrying about my bags every time I stopped for gas or photos. I'm a software engineer, I ride an Indian Springfield 1811cc across Europe and Scandinavia, and I carry expensive gear. This system lets me focus on the ride instead of constantly checking my mirrors.
+I built this system because I was tired of worrying about my bags every time I stopped for gas or photos. I'm a software engineer, I ride an touring motorcycle across Europe and Scandinavia, and I carry expensive gear. This system lets me focus on the ride instead of constantly checking my mirrors.
 
 If you're the kind of rider who loads up for multi-day adventures, carries gear worth more than your monthly salary, or just wants that extra layer of "I've got this covered"—this system is for you.
 

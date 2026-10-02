@@ -4,7 +4,7 @@ This document provides a complete, ready-to-use configuration for tracking BLE b
 
 ## Use Case
 
-Track cargo bags/panniers on a motorcycle or vehicle. Get alerts when:
+Track cargo bags or panniers on a motorcycle or vehicle. Get alerts when:
 - A bag becomes detached (distance > threshold while moving)
 - Beacon battery is low
 - Temperature is too high/low
@@ -34,7 +34,7 @@ Track cargo bags/panniers on a motorcycle or vehicle. Get alerts when:
 1. Go to **Features** → **Bluetooth** → **Beacons**
 2. Click **Scan for beacons**
 3. Add each discovered beacon to the list
-4. Optionally name them (e.g., "MOSKO_Bag", "PANNIERS", "OXFORD_Bag")
+4. Optionally name them (e.g., "MainBag", "SideBags", "RearBag")
 5. Save configuration
 
 **Note**: The beacon names configured in FMM920 will appear in the `beaconX-name` channels.
@@ -53,9 +53,9 @@ grep "Found tag.*with MAC" /var/log/openhab/openhab.log | tail -20
 
 Example output:
 ```
-2026-01-20 22:20:55.123 [DEBUG] Found tag1 with MAC 7cd9f413830b
-2026-01-20 22:20:55.124 [DEBUG] Found tag2 with MAC 7cd9f4128704
-2026-01-20 22:20:55.125 [DEBUG] Found tag3 with MAC 7cd9f414d0d7
+2026-01-20 22:20:55.123 [DEBUG] Found tag1 with MAC aabbcc112233
+2026-01-20 22:20:55.124 [DEBUG] Found tag2 with MAC aabbcc778899
+2026-01-20 22:20:55.125 [DEBUG] Found tag3 with MAC aabbcc445566
 ```
 
 Write down these MAC addresses - you'll need them for configuration.
@@ -82,9 +82,9 @@ Bridge traccar:server:gpsserver "Traccar GPS Server" [
     Thing device motorcycle "My Motorcycle" [
         deviceId=10,
         // Beacon MAC addresses (discovered in Step 2)
-        beacon1Mac="7cd9f413830b",  // Replace with your MAC
-        beacon2Mac="7cd9f414d0d7",  // Replace with your MAC
-        beacon3Mac="7cd9f4128704"   // Replace with your MAC
+        beacon1Mac="aabbcc112233",  // Replace with your MAC
+        beacon2Mac="aabbcc445566",  // Replace with your MAC
+        beacon3Mac="aabbcc778899"   // Replace with your MAC
         // beacon4Mac="xxxxxxxxxxxx"  // Optional 4th beacon
     ]
 }
@@ -93,7 +93,7 @@ Bridge traccar:server:gpsserver "Traccar GPS Server" [
 **Important**: 
 - Replace `deviceId` with your Traccar device ID (found in Traccar web interface)
 - Replace beacon MAC addresses with the ones you discovered
-- MAC addresses must be lowercase without colons: `7cd9f413830b` ✓, `7C:D9:F4:13:83:0B` ✗
+- MAC addresses must be lowercase without colons: `aabbcc112233` ✓, `AA:BB:CC:11:22:33` ✗
 
 ## Step 4: Create Items
 
@@ -143,7 +143,7 @@ Switch Motorcycle_Ignition "Ignition [MAP(ignition.map):%s]" (gMotorcyclePositio
     {channel="traccar:device:gpsserver:motorcycle:ignition"}
 
 // ----------------------------------------------------------------------------
-// BEACON 1 - Primary Cargo (e.g., Mosko Bag)
+// BEACON 1 - Primary Cargo (e.g., MainBag Bag)
 // ----------------------------------------------------------------------------
 
 String Beacon1_Mac "Beacon 1 MAC [%s]" <bluetooth> (gBeacons)
@@ -171,7 +171,7 @@ Number:Dimensionless Beacon1_Humidity "Beacon 1 Humidity [%.0f %%]" <humidity> (
     {channel="traccar:device:gpsserver:motorcycle:beacon1-humidity"}
 
 // ----------------------------------------------------------------------------
-// BEACON 2 - Secondary Cargo (e.g., Panniers)
+// BEACON 2 - Secondary Cargo (e.g., side bags)
 // ----------------------------------------------------------------------------
 
 String Beacon2_Mac "Beacon 2 MAC [%s]" <bluetooth> (gBeacons)
@@ -199,7 +199,7 @@ Number:Dimensionless Beacon2_Humidity "Beacon 2 Humidity [%.0f %%]" <humidity> (
     {channel="traccar:device:gpsserver:motorcycle:beacon2-humidity"}
 
 // ----------------------------------------------------------------------------
-// BEACON 3 - Tertiary Cargo (e.g., Oxford Bag)
+// BEACON 3 - Tertiary Cargo (e.g., RearBag Bag)
 // ----------------------------------------------------------------------------
 
 String Beacon3_Mac "Beacon 3 MAC [%s]" <bluetooth> (gBeacons)
@@ -458,7 +458,7 @@ sitemap motorcycle label="Motorcycle Tracking" {
     }
     
     Frame label="Cargo Beacons" {
-        Text label="Beacon 1 - Mosko Bag" icon="bag" {
+        Text label="Beacon 1 - MainBag Bag" icon="bag" {
             Default item=Beacon1_Name
             Text item=Beacon1_Mac icon="bluetooth"
             Text item=Beacon1_RSSI icon="signal" 
@@ -472,7 +472,7 @@ sitemap motorcycle label="Motorcycle Tracking" {
             Text item=Beacon1_Humidity icon="humidity"
         }
         
-        Text label="Beacon 2 - Panniers" icon="bag" {
+        Text label="Beacon 2 - Side bags" icon="bag" {
             Default item=Beacon2_Name
             Text item=Beacon2_Mac icon="bluetooth"
             Text item=Beacon2_RSSI icon="signal"
@@ -486,7 +486,7 @@ sitemap motorcycle label="Motorcycle Tracking" {
             Text item=Beacon2_Humidity icon="humidity"
         }
         
-        Text label="Beacon 3 - Oxford Bag" icon="bag" {
+        Text label="Beacon 3 - RearBag Bag" icon="bag" {
             Default item=Beacon3_Name
             Text item=Beacon3_Mac icon="bluetooth"
             Text item=Beacon3_RSSI icon="signal"
@@ -510,10 +510,10 @@ tail -f /var/log/openhab/openhab.log | grep -E "Found tag|Routing tag"
 
 Expected output:
 ```
-[DEBUG] Found tag1 with MAC 7cd9f413830b
-[DEBUG] Routing tag1 (MAC 7cd9f413830b) to beacon1
-[DEBUG] Found tag2 with MAC 7cd9f414d0d7
-[DEBUG] Routing tag2 (MAC 7cd9f414d0d7) to beacon2
+[DEBUG] Found tag1 with MAC aabbcc112233
+[DEBUG] Routing tag1 (MAC aabbcc112233) to beacon1
+[DEBUG] Found tag2 with MAC aabbcc445566
+[DEBUG] Routing tag2 (MAC aabbcc445566) to beacon2
 ```
 
 ### 2. Check Item States

@@ -16,7 +16,7 @@ This is a comprehensive GPS tracking binding that integrates Traccar server with
 - **No more protocol fallback logic**: Each channel directly maps to its Traccar field
 - **Breaking change**: `Vehicle10_Odometer` renamed to `Vehicle10_TotalDistance` for Teltonika devices
   - **Action required**: Update any rules referencing `Vehicle10_Odometer` to use `Vehicle10_TotalDistance`
-  - Example: Springfield_Ignition.rules updated in commit 0bf7c99
+  - Example: Motorcycle_Ignition.rules updated in commit 0bf7c99
 
 ### Speed Threshold Filtering
 - **GPS noise filtering**: Configurable speed threshold (0-10 km/h, default 2.0)
@@ -177,7 +177,7 @@ if (distanceObj instanceof Number) {
 
 **Protocol-Specific Usage**:
 - **Teltonika devices**: Use `totalDistance` channel - contains actual vehicle odometer value
-  - Example: Springfield motorcycle shows 33,280 km (real odometer reading)
+  - Example: the motorcycle shows 33,280 km (real odometer reading)
   - Teltonika sends vehicle odometer in the `totalDistance` field
 - **OSMand (phone tracking)**: Use `odometer` channel - contains device-reported distance
   - Example: Dream Catcher phone shows 347.8 km (distance tracked by app)
@@ -215,13 +215,13 @@ The `ignition` channel is essential for vehicle automation:
 - Provides real-time ignition state monitoring
 - Works with Traccar's `ignitionOn`/`ignitionOff` event webhooks
 
-**Example ignition notification rule** (see `Springfield_Ignition.rules` in examples):
+**Example ignition notification rule** (see `Motorcycle_Ignition.rules` in examples):
 ```java
 // Global debounce variables (prevent duplicate notifications within 30 seconds)
 var Long lastIgnitionOnTime = 0L
 var Long lastIgnitionOffTime = 0L
 
-rule "Springfield Ignition ON"
+rule "Motorcycle Ignition ON"
 when
     Item Vehicle10_Ignition changed to ON
 then
@@ -229,7 +229,7 @@ then
         // Debounce check
         val currentTime = new java.util.Date().time
         if ((currentTime - lastIgnitionOnTime) < 30000) {
-            logInfo("springfield_ignition", "Ignition ON triggered too soon - skipping")
+            logInfo("motorcycle_ignition", "Ignition ON triggered too soon - skipping")
             return
         }
         lastIgnitionOnTime = currentTime
@@ -241,13 +241,13 @@ then
             else "Unknown"
         
         // Send email notification
-        sendHtmlMail("email@example.com", "Springfield Ignition ON", 
-            "<html><body><h2>Springfield Motorcycle</h2>" +
+        sendHtmlMail("email@example.com", "Motorcycle Ignition ON", 
+            "<html><body><h2>Motorcycle</h2>" +
             "<table><tr><td><strong>Status:</strong></td><td>Ignition ON</td></tr>" +
             "<tr><td><strong>Odometer:</strong></td><td>" + odometer + "</td></tr></table>" +
             "</body></html>")
     } catch (Exception e) {
-        logError("springfield_ignition", "Error: {}", e.message)
+        logError("motorcycle_ignition", "Error: {}", e.message)
     }
 end
 ```

@@ -114,9 +114,9 @@ This document describes the comprehensive BLE beacon tracking documentation adde
 ```openhab
 Thing device motorcycle [
     deviceId=10,
-    beacon1Mac="7cd9f413830b",
-    beacon2Mac="7cd9f414d0d7",
-    beacon3Mac="7cd9f4128704"
+    beacon1Mac="aabbcc112233",
+    beacon2Mac="aabbcc445566",
+    beacon3Mac="aabbcc778899"
 ]
 ```
 
@@ -279,11 +279,11 @@ Added 4 beacon MAC configuration parameters:
 **traccar.things** (example):
 
 ```openhab
-Thing traccar:device:gpsserver:350000000000000 "Springfield" (traccar:server:gpsserver) [
+Thing traccar:device:gpsserver:350000000000000 "Motorcycle" (traccar:server:gpsserver) [
     deviceId=10,
-    beacon1Mac="7cd9f413830b",
-    beacon2Mac="7cd9f414d0d7",
-    beacon3Mac="7cd9f4128704"
+    beacon1Mac="aabbcc112233",
+    beacon2Mac="aabbcc445566",
+    beacon3Mac="aabbcc778899"
 ]
 ```
 
@@ -346,6 +346,6 @@ The documentation provides three levels of detail to serve different user needs:
 2. **beacon-tracking-example.md** - Detailed walkthrough with full working config
 3. **beacon-quickstart.md** - Quick 5-minute setup for impatient users
 
-All documentation is production-ready, tested, and includes real-world examples from actual deployment (Springfield motorcycle with 3 beacons: MOSKO_Bag, PANNIERS, OXFORD_Bag).
+All documentation is production-ready, tested, and includes worked examples for a vehicle carrying three beacons (MainBag, SideBags, RearBag).
 
 Users can now implement beacon tracking without hassle by following any of these guides based on their preference for detail level.

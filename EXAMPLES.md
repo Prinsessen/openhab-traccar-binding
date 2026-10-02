@@ -371,10 +371,10 @@ The Traccar binding provides three separate distance channels to accommodate dif
 
 ```openhab
 // Use totalDistance for actual vehicle odometer
-Number:Length Springfield_TotalDistance "Odometer [%.1f km]" 
+Number:Length Motorcycle_TotalDistance "Odometer [%.1f km]" 
     {channel="traccar:device:gpsserver:motorcycle:totalDistance", unit="km"}
 
-Number:Length Springfield_Trip "Trip Distance [%.1f m]" 
+Number:Length Motorcycle_Trip "Trip Distance [%.1f m]" 
     {channel="traccar:device:gpsserver:motorcycle:distance"}
 ```
 
@@ -731,7 +731,7 @@ Bridge traccar:server:global "Traccar Global" [
     nominatimLanguage="en",
     geocodingCacheDistance=50
 ] {
-    Thing device motorcycle "Springfield" [ deviceId=10 ]
+    Thing device motorcycle "Motorcycle" [ deviceId=10 ]
     Thing device phone "Dream Catcher" [ deviceId=1 ]
 }
 ```
@@ -1046,10 +1046,10 @@ val cooldownMinutes = 5         // Minutes between repeated alerts
 #### Scenario 4: Tampering Detection
 ```
 1. Bike parked, you're in restaurant
-2. Someone tries to pull off pannier
+2. Someone tries to pull off a side bag
 3. Beacon tips from 15° → 70°
 4. Grace period still active (10 min since parking)
-5. 🚨 Alert: "Pannier FALLEN"
+5. 🚨 Alert: "Side bag FALLEN"
 6. You can respond immediately
 ```
 

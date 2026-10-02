@@ -32,15 +32,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   now survive an openHAB restart. They are stored in Thing properties and
   restored, so `beacon-name` keeps showing the last known name even when the
   beacon is out of range or absent from a webhook update.
-- Documentation and examples no longer carry a real home address, real home
-  coordinates or a real device IMEI. They were used as sample values throughout
-  the README, EXAMPLES, the OBD-II guide and the bundled `vehicle_tracker.html`.
-  Replaced with a documentation address, Copenhagen city centre and
-  `350000000000000`.
-- Removed `FMM920_current.txt`, a complete dump of one physical tracker's
-  configuration: geofence coordinates, a Bluetooth MAC, authorised key
-  identifiers and a telematics gateway channel id. Of no use to anyone but its
-  owner.
+- Documentation and examples now use documentation values throughout: a
+  documentation street address, a city-centre coordinate pair, `350000000000000`
+  as the sample device id and `aabbcc112233`-style beacon MACs from the locally
+  administered range. Nothing in the examples is copyable as a working
+  identifier any more, and nobody has to wonder whether a sample value belongs
+  to someone.
+- Removed `FMM920_current.txt`, one tracker's own configuration export.
+  Useful to its owner, to nobody else.
 
 ### Security
 - Webhook payload logging moved from INFO to DEBUG. The body is the complete

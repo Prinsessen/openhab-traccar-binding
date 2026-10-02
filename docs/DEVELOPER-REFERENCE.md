@@ -74,18 +74,18 @@ private void updateBeaconData(Map<String, Object> attributes, String sourcePrefi
 {
   "position": {
     "attributes": {
-      "tag1Mac": "7cd9f413830b",
-      "tag1Name": "MOSKO_Bag",
+      "tag1Mac": "aabbcc112233",
+      "tag1Name": "MainBag",
       "tag1Rssi": -55,
       "tag1Battery": 2.87,
       "tag1Temp": 2123,
       "tag1Humidity": 45,
       "tag1LowBattery": 0,
-      "tag2Mac": "7cd9f4128704",
+      "tag2Mac": "aabbcc778899",
       "tag2Rssi": -63,
       "tag2Battery": 2.85,
-      "tag3Mac": "7cd9f414d0d7",
-      "tag3Name": "PANNIERS",
+      "tag3Mac": "aabbcc445566",
+      "tag3Name": "SideBags",
       "tag3Rssi": -51,
       "tag3Battery": 2.86
     }
@@ -98,27 +98,27 @@ private void updateBeaconData(Map<String, Object> attributes, String sourcePrefi
 ### Processing: MAC Routing
 
 ```
-tag1 (7cd9f413830b) → macToBeaconSlot lookup → beacon1
-tag2 (7cd9f4128704) → macToBeaconSlot lookup → beacon3
-tag3 (7cd9f414d0d7) → macToBeaconSlot lookup → beacon2
+tag1 (aabbcc112233) → macToBeaconSlot lookup → beacon1
+tag2 (aabbcc778899) → macToBeaconSlot lookup → beacon3
+tag3 (aabbcc445566) → macToBeaconSlot lookup → beacon2
 ```
 
 ### Output: OpenHAB Channels
 
 ```
-beacon1-mac: 7cd9f413830b
-beacon1-name: MOSKO_Bag
+beacon1-mac: aabbcc112233
+beacon1-name: MainBag
 beacon1-rssi: -55
 beacon1-distance: 0.63 m
 beacon1-battery: 2.87 V
 beacon1-temperature: 21.23 °C
 
-beacon2-mac: 7cd9f414d0d7
-beacon2-name: PANNIERS
+beacon2-mac: aabbcc445566
+beacon2-name: SideBags
 beacon2-rssi: -51
 beacon2-battery: 2.86 V
 
-beacon3-mac: 7cd9f4128704
+beacon3-mac: aabbcc778899
 beacon3-rssi: -63
 beacon3-distance: 1.78 m
 beacon3-battery: 2.85 V
@@ -132,7 +132,7 @@ beacon3-battery: 2.85 V
 <!-- Beacon MAC routing -->
 <parameter name="beacon1Mac" type="text">
     <label>Beacon 1 MAC Address</label>
-    <description>MAC address to assign to Beacon 1 slot (e.g., 7cd9f413830b)</description>
+    <description>MAC address to assign to Beacon 1 slot (e.g., aabbcc112233)</description>
     <advanced>true</advanced>
 </parameter>
 
@@ -232,13 +232,13 @@ grep "Configured beacon MAC" /var/log/openhab/openhab.log
 
 ```
 [DEBUG] Initializing beacon MAC mappings from configuration
-[DEBUG] Beacon slot 1 config param 'beacon1Mac' = 7cd9f413830b
-[DEBUG] Configured beacon MAC 7cd9f413830b for slot 1
+[DEBUG] Beacon slot 1 config param 'beacon1Mac' = aabbcc112233
+[DEBUG] Configured beacon MAC aabbcc112233 for slot 1
 [DEBUG] Beacon MAC mapping initialized with 3 entries
 ...
 [DEBUG] Processing beacons with MAC routing
-[DEBUG] Found tag1 with MAC 7cd9f413830b
-[DEBUG] Routing tag1 (MAC 7cd9f413830b) to beacon1
+[DEBUG] Found tag1 with MAC aabbcc112233
+[DEBUG] Routing tag1 (MAC aabbcc112233) to beacon1
 ```
 
 ## Build & Deploy
