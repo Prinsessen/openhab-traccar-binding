@@ -51,11 +51,20 @@ Bridge traccar:server:gpsserver "Traccar Server" [
     refreshInterval=30,
     webhookPort=8088
 ] {
-    Thing device car "Car" [ deviceId="350000000000000" ]
+    Thing device car "Car" [ deviceId=4 ]
 }
 ```
 
-`deviceId` is the device's unique id in Traccar -- usually the tracker's IMEI, or whatever identifier the app registered with.
+`deviceId` is Traccar's own **numeric** device id -- a small integer, not the
+tracker's IMEI. The IMEI is the device's *identifier* in Traccar (`uniqueId`),
+which is what you type in when registering it; the id is what Traccar assigns
+afterwards. Log in and open `/api/devices` to see both:
+
+```json
+[ { "id": 4, "uniqueId": "350000000000000", "name": "Car" } ]
+```
+
+Use the `id`. A 15-digit IMEI will not fit in the integer this parameter takes.
 
 ### traccar.items
 
