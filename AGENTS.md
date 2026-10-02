@@ -4,7 +4,7 @@
 
 This is a comprehensive GPS tracking binding that integrates Traccar server with openHAB. The binding supports real-time position updates via webhooks, extensive channel support, and handles multiple GPS protocols with their specific attribute differences.
 
-**Key Achievement**: Full dual-mode operation (polling + webhooks) with 22 channels per device, protocol-agnostic attribute handling, and automatic unit conversions.
+**Key Achievement**: Full dual-mode operation (polling + webhooks) with 101 channels per device, protocol-agnostic attribute handling, and automatic unit conversions.
 
 ## Recent Updates (January 2026)
 
@@ -539,8 +539,8 @@ openhab> log:set TRACE org.openhab.binding.traccar  # For full detail
 ```
 [INFO] Webhook server started on port 8090
 [DEBUG] Received webhook (POST): {"position":...}
-[INFO] Processing webhook position update
-[INFO] Processing webhook event type: geofenceEnter
+[DEBUG] Processing webhook position update
+[DEBUG] Processing webhook event type: geofenceEnter
 ```
 
 **Odometer protocol detection**:
@@ -700,7 +700,63 @@ Number:Length Vehicle_New "New Channel [%.1f m]"
     {channel="traccar:device:myserver:car1:newChannel"}
 ```
 
-### 5. Rebuild and deploy (see Build and Deployment section)
+### 5. Update the documentation — every place, not the first one
+
+This step is written down because it was skipped: `AGENTS.md` claimed 22
+channels per device while the thing had 101, and sample log output still showed
+INFO lines months after they moved to DEBUG. Stale documentation is worse than
+none, because it is believed.
+
+- [ ] **`README.md`** — add a row to the channel table in the matching section,
+      or a new `###` section if the channel belongs to no existing group
+- [ ] **`AGENTS.md` line 7** — the channel count. Get the real number with:
+      `sed -n '/thing-type id="device"/,/<\/thing-type>/p' src/main/resources/OH-INF/thing/thing-types.xml | grep -c "<channel id="`
+- [ ] **`CHANGELOG.md`** — an entry under `### Added` in the unreleased section
+- [ ] **`EXAMPLES.md`** — only if the channel needs showing in use; add it to the
+      table of contents too
+- [ ] **`MARKETPLACE_POST.md`** — the feature list, if a user would choose the
+      binding because of it
+- [ ] **`docs/INDEX.md`** — only when a new documentation *file* appears
+
+Then re-read the diff looking for anything house-specific. This is a public
+repository: no addresses, no coordinates, no real IMEIs, no private hostnames.
+Sample values belong in the documentation ranges — `traccar.example.com`,
+`350000000000000`.
+
+### 6. Rebuild and deploy
+
+See the Build and Deployment section. `scripts/deploy-binding.sh` in the openHAB
+tree builds in the reactor, verifies no class was lost against the deployed JAR,
+backs the old one up and installs the new one.
+
+## CAN Adapter Channels
+
+A CAN adapter (ALL-CAN300 and similar) reports far more than a GPS tracker, and
+it needs a shape decided before the first channel is written.
+
+**The values are easy.** State of charge, range, speed, odometer, pedal
+position, VIN — one channel each, as above, with proper units.
+
+**The flags are the decision.** They do not arrive one per attribute; they come
+packed into bitfields, typically a *control state* and a *security state* word
+plus a separate door bitmask. A single vehicle can carry forty or more of them —
+doors, lights, belts, gear position, charging cable, handbrake, ABS, airbag.
+
+Three ways to surface that, and it is worth choosing deliberately:
+
+1. **One Switch channel per flag.** Most usable: rules and sitemaps read them
+   directly, no transform. Costs a lot of channel definitions.
+2. **The raw bitfield as a Number**, decoded per item with a JS transform.
+   Cheap in the binding, pushes the work onto every user.
+3. **Group the useful ones** — doors, lights, drivetrain — and leave the rest in
+   the raw number.
+
+Prefer (1) for anything a rule would plausibly trigger on, and leave the rest.
+A channel nobody reads still has to be documented and kept working.
+
+**And confirm every bit against an observation.** Open one door, watch which bit
+moves. The published tables are per-device-family and do not survive being
+assumed.
 
 ## Complete Working Examples
 

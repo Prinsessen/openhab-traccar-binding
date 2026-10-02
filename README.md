@@ -967,7 +967,7 @@ tail -f /var/log/openhab/openhab.log | grep "webhook"
 You should see:
 ```
 [DEBUG] Received webhook (POST): {"position":{"latitude":55.676,...}}
-[INFO] Processing webhook position update
+[DEBUG] Processing webhook position update
 ```
 
 ### Webhook Data Format

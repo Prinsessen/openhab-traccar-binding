@@ -18,6 +18,7 @@ Complete working examples for the Traccar binding.
 7. [Multi-Vehicle Tracking](#multi-vehicle-tracking)
 8. [GPS Signal and Connectivity Monitoring](#gps-signal-and-connectivity-monitoring)
 9. [BLE Beacon Fall Detection (Advanced)](#ble-beacon-fall-detection-advanced)
+10. [Finding Out What a Device Actually Sends](#finding-out-what-a-device-actually-sends)
 
 ---
 
@@ -1270,6 +1271,57 @@ pushoverAction.sendPushoverMessage(
         .withSound("siren")
 )
 ```
+
+---
+
+## Finding Out What a Device Actually Sends
+
+The binding reads about thirty attributes by name. Anything your tracker sends
+that is not on that list arrives and is never looked at — nothing filters it,
+there is simply no channel asking for it.
+
+The `raw-attributes` channel shows the lot, so you can see what a new device,
+dongle or CAN adapter is really sending before deciding what deserves a channel.
+
+### traccar.items
+
+```java
+String Car_RawAttributes "Raw attributes [%s]"
+  { channel="traccar:device:gpsserver:car:raw-attributes" }
+```
+
+### Reading it
+
+Put it on a sitemap, or just watch the log:
+
+```java
+rules.JSRule({
+  name: 'Log raw attributes when they change',
+  triggers: [triggers.ItemStateChangeTrigger('Car_RawAttributes')],
+  execute: (event) => console.info('traccar raw: ' + event.newState)
+});
+```
+
+Output is sorted `name=value`, so two readings can be compared by eye:
+
+```
+batteryLevel=71.0, charge=false, distance=1.19, hours=3600000, io30=0,
+io31=23.5, io36=1850, motion=true, totalDistance=2.33E8
+```
+
+### Then what
+
+Change one thing on the vehicle — open a door, plug in the charger, switch on
+the headlights — and look at which value moved. That is the attribute you want.
+
+**Do not shortcut this with a protocol table.** Teltonika's AVL IO numbers are
+per-peripheral: `io38` from a Bluetooth OBD dongle is vehicle speed, while AVL
+ID 38 from a CAN adapter is Control State Flags. The same number, two unrelated
+meanings. A channel named from a table rather than an observation is
+confidently wrong, which is worse than missing.
+
+Once you know, open an issue or a pull request — a named channel is better for
+everyone than a string that has to be parsed.
 
 ---
 

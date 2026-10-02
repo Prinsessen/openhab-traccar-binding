@@ -8,6 +8,14 @@ This document details the implementation of OBD-II (On-Board Diagnostics) channe
 
 - **Vehicle**: Motorcycle (Springfield)
 - **GPS Tracker**: Teltonika FMM920 (IMEI: 350000000000000)
+
+> **Identifying an unknown IO number.** The numbers below were worked out by
+> watching what the tracker sent and correlating it with the vehicle. The
+> `raw-attributes` channel exists to make that straightforward: set it on the
+> thing and it prints every attribute the server decoded, sorted. Note that the
+> numbering is per-peripheral — `io38` from this Bluetooth dongle is vehicle
+> speed, while AVL ID 38 from a CAN adapter is Control State Flags — so always
+> confirm against an observation rather than a protocol table.
 - **OBD-II Dongle**: Bluetooth ELM327/STN1110 compatible (ODBLink MX+ recommended)
 - **Connection**: Dongle paired with FMM920 via Bluetooth, transmits as AVL IO parameters
 
