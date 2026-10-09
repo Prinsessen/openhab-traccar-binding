@@ -130,7 +130,8 @@ public class TraccarDeviceHandler extends BaseThingHandler {
         if (!profile().hasCanAdapter()) {
             if (!present.isEmpty()) {
                 updateThing(editThing().withoutChannels(present).build());
-                logger.debug("Device {}: CAN channels removed (canAdapter is not lvcan)", profile().deviceId);
+                logger.info("Device {}: {} CAN channel(s) removed (canAdapter is not lvcan)", profile().deviceId,
+                        present.size());
             }
             return;
         }
@@ -154,7 +155,7 @@ public class TraccarDeviceHandler extends BaseThingHandler {
             ThingBuilder builder = editThing();
             missing.forEach(builder::withChannel);
             updateThing(builder.build());
-            logger.debug("Device {}: {} CAN channel(s) added", profile().deviceId, missing.size());
+            logger.info("Device {}: {} CAN channel(s) added (canAdapter=lvcan)", profile().deviceId, missing.size());
         }
     }
 
