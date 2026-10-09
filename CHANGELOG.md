@@ -5,6 +5,27 @@ All notable changes to the Traccar binding will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Teltonika CAN adapter support** (ALL-CAN300 / LV-CAN200 on an FMx6 tracker
+  such as the FMC650): with the new device parameter `canAdapter=lvcan` the
+  thing gets a `can` channel group - traction battery level, range, odometer,
+  speed, pedal, doors, and the security, control and indicator flags (ignition,
+  ready, charging cable, charging, locked, gear, lights, belts, warning lamps),
+  each value with its own `...Seen` time. Tested on a Toyota bZ4X; the README
+  marks every channel tested or untested.
+- Device parameters `deviceFamily`, `canAdapter`, `obdDongle` and
+  `gearParkWhenOff`. The defaults decode exactly as before.
+- The first unit tests (`LvcanDecoderTest`).
+
+### Changed
+- io30-io48 are read as OBD-II data only when the thing has no CAN adapter
+  (and `obdDongle` is not `none`): on a CAN adapter the same numbers carry other
+  values.
+- With `deviceFamily=fmx6`, `batteryLevel` is not filled: Traccar reads it from
+  AVL 113, which is Service Distance on that family.
+
 ## [1.1.1] - 2026-10-02
 
 ### Fixed

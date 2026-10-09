@@ -15,7 +15,9 @@ package org.openhab.binding.traccar.internal;
 import static org.openhab.binding.traccar.internal.TraccarBindingConstants.*;
 
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -35,14 +37,20 @@ import org.openhab.core.library.unit.MetricPrefix;
 import org.openhab.core.library.unit.SIUnits;
 import org.openhab.core.library.unit.Units;
 import org.openhab.core.thing.Bridge;
+import org.openhab.core.thing.Channel;
+import org.openhab.core.thing.ChannelGroupUID;
 import org.openhab.core.thing.ChannelUID;
 import org.openhab.core.thing.Thing;
 import org.openhab.core.thing.ThingStatus;
 import org.openhab.core.thing.ThingStatusDetail;
 import org.openhab.core.thing.binding.BaseThingHandler;
 import org.openhab.core.thing.binding.BridgeHandler;
+import org.openhab.core.thing.binding.ThingHandlerCallback;
+import org.openhab.core.thing.binding.builder.ChannelBuilder;
+import org.openhab.core.thing.binding.builder.ThingBuilder;
 import org.openhab.core.types.Command;
 import org.openhab.core.types.RefreshType;
+import org.openhab.core.types.State;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,6 +69,13 @@ public class TraccarDeviceHandler extends BaseThingHandler {
     private final Map<String, Integer> macToBeaconSlot = new HashMap<>();
     private final Map<Integer, String> beaconSlotToName = new HashMap<>();
     private @Nullable NominatimGeocoder geocoder;
+
+    /**
+     * Device time of the newest record whose CAN fields were applied. Records do not always arrive in
+     * order - after a cold boot the tracker uploads its buffer, and with a long send period they come in
+     * batches - and an old record must not overwrite a newer state (ready, doors, battery level).
+     */
+    private @Nullable ZonedDateTime newestCanRecord;
 
     public TraccarDeviceHandler(Thing thing) {
         super(thing);
@@ -89,8 +104,58 @@ public class TraccarDeviceHandler extends BaseThingHandler {
             return;
         }
 
+        updateCanChannels();
+
         updateStatus(ThingStatus.UNKNOWN);
         scheduler.execute(this::connect);
+    }
+
+    private TraccarDeviceConfiguration profile() {
+        TraccarDeviceConfiguration configuration = config;
+        return configuration != null ? configuration : new TraccarDeviceConfiguration();
+    }
+
+    /**
+     * Adds the {@code can} channel group with {@code canAdapter=lvcan}, and removes it without, so a
+     * motorcycle never shows an HV battery. Adds only what is missing (a newer release may bring new
+     * channels), and keeps channels already there and linked. The builders come from core's registry,
+     * the same way for a thing from a .things file as for a managed one.
+     */
+    private void updateCanChannels() {
+        ThingHandlerCallback callback = getCallback();
+        if (callback == null) {
+            return;
+        }
+        List<Channel> present = getThing().getChannelsOfGroup(CHANNEL_GROUP_CAN);
+        if (!profile().hasCanAdapter()) {
+            if (!present.isEmpty()) {
+                updateThing(editThing().withoutChannels(present).build());
+                logger.debug("Device {}: CAN channels removed (canAdapter is not lvcan)", profile().deviceId);
+            }
+            return;
+        }
+        List<ChannelBuilder> builders;
+        try {
+            builders = callback.createChannelBuilders(new ChannelGroupUID(getThing().getUID(), CHANNEL_GROUP_CAN),
+                    CHANNEL_GROUP_TYPE_CAN);
+        } catch (RuntimeException e) {
+            logger.warn("Device {}: CAN channels could not be created: {}", profile().deviceId, e.getMessage());
+            return;
+        }
+        List<Channel> missing = new ArrayList<>();
+        for (ChannelBuilder builder : builders) {
+            Channel channel = builder.build();
+            if (getThing().getChannel(channel.getUID()) == null) {
+                missing.add(channel);
+            }
+        }
+        if (!missing.isEmpty()) {
+            // withChannel adds; withChannels would REPLACE every channel the thing has
+            ThingBuilder builder = editThing();
+            missing.forEach(builder::withChannel);
+            updateThing(builder.build());
+            logger.debug("Device {}: {} CAN channel(s) added", profile().deviceId, missing.size());
+        }
     }
 
     private void connect() {
@@ -349,8 +414,9 @@ public class TraccarDeviceHandler extends BaseThingHandler {
             }
             updateState(CHANNEL_RAW_ATTRIBUTES, new StringType(raw.toString()));
 
-            // Battery level
-            Object batteryObj = attributes.get("batteryLevel");
+            // Battery level. Traccar reads it from AVL 113, which is the internal battery on the FMB
+            // family but Service Distance on the FMx6 family - so not there.
+            Object batteryObj = profile().isFmx6() ? null : attributes.get("batteryLevel");
             if (batteryObj instanceof Number) {
                 double battery = ((Number) batteryObj).doubleValue();
                 updateState(CHANNEL_BATTERY_LEVEL, new QuantityType<>(battery, Units.PERCENT));
@@ -487,28 +553,6 @@ public class TraccarDeviceHandler extends BaseThingHandler {
                 updateState(CHANNEL_VIN, new StringType(vinObj.toString()));
             }
 
-            // Additional Teltonika IO Channels (experimental/unknown purpose)
-            // io42: Varies 84-94 (possibly intake air temperature or another sensor)
-            Object io42Obj = attributes.get("io42");
-            if (io42Obj instanceof Number) {
-                int io42 = ((Number) io42Obj).intValue();
-                updateState(CHANNEL_IO42, new DecimalType(io42));
-            }
-
-            // io49: Typically constant ~5816 (possibly battery voltage in mV)
-            Object io49Obj = attributes.get("io49");
-            if (io49Obj instanceof Number) {
-                int io49 = ((Number) io49Obj).intValue();
-                updateState(CHANNEL_IO49, new DecimalType(io49));
-            }
-
-            // io51: Varies 14000-14200 (possibly alternator voltage in mV)
-            Object io51Obj = attributes.get("io51");
-            if (io51Obj instanceof Number) {
-                int io51 = ((Number) io51Obj).intValue();
-                updateState(CHANNEL_IO51, new DecimalType(io51));
-            }
-
             // Trip distance (resets)
             Object tripDistanceObj = attributes.get("distance");
             if (tripDistanceObj instanceof Number) {
@@ -523,109 +567,16 @@ public class TraccarDeviceHandler extends BaseThingHandler {
                 updateState(CHANNEL_EVENT_CODE, new DecimalType(eventCode));
             }
 
-            // OBD-II Trip Meters from ECU
-            // io199: Trip odometer 1 (in meters, convert to km)
-            Object io199Obj = attributes.get("io199");
-            if (io199Obj instanceof Number) {
-                double trip1Meters = ((Number) io199Obj).doubleValue();
-                updateState(CHANNEL_IO199, new QuantityType<>(trip1Meters / 1000.0, MetricPrefix.KILO(SIUnits.METRE)));
+            // The io numbers below mean OBD-II data from a Bluetooth dongle. On a tracker with a CAN
+            // adapter the same numbers carry the adapter's values (io30 speed, io36 mileage, io38 the
+            // control flags), so they are read here only when the thing says a dongle is fitted.
+            if (profile().readsObd()) {
+                updateObdChannels(attributes);
             }
 
-            // io205: Trip odometer 2 (in meters, convert to km)
-            Object io205Obj = attributes.get("io205");
-            if (io205Obj instanceof Number) {
-                double trip2Meters = ((Number) io205Obj).doubleValue();
-                updateState(CHANNEL_IO205, new QuantityType<>(trip2Meters / 1000.0, MetricPrefix.KILO(SIUnits.METRE)));
-            }
-
-            // io389: Total vehicle mileage from ECU (in meters, convert to km)
-            Object io389Obj = attributes.get("io389");
-            if (io389Obj instanceof Number) {
-                double ecuOdometerMeters = ((Number) io389Obj).doubleValue();
-                updateState(CHANNEL_IO389,
-                        new QuantityType<>(ecuOdometerMeters / 1000.0, MetricPrefix.KILO(SIUnits.METRE)));
-            }
-
-            // OBD-II Data (Teltonika FMM920 with Bluetooth OBD-II dongle)
-            // These channels are only populated when an OBD-II dongle is paired and ignition is ON
-
-            // io30: Number of Diagnostic Trouble Codes (DTCs)
-            Object io30Obj = attributes.get("io30");
-            if (io30Obj instanceof Number) {
-                int dtcCount = ((Number) io30Obj).intValue();
-                updateState(CHANNEL_OBD_DTC_COUNT, new DecimalType(dtcCount));
-            }
-
-            // io31: Engine Load [%]
-            Object io31Obj = attributes.get("io31");
-            if (io31Obj instanceof Number) {
-                double engineLoad = ((Number) io31Obj).doubleValue();
-                updateState(CHANNEL_OBD_ENGINE_LOAD, new QuantityType<>(engineLoad, Units.PERCENT));
-            }
-
-            // io32: Coolant Temperature [°C]
-            Object io32Obj = attributes.get("io32");
-            if (io32Obj instanceof Number) {
-                double coolantTemp = ((Number) io32Obj).doubleValue();
-                updateState(CHANNEL_OBD_COOLANT_TEMP, new QuantityType<>(coolantTemp, SIUnits.CELSIUS));
-            }
-
-            // io33: Short Fuel Trim [%]
-            Object io33Obj = attributes.get("io33");
-            if (io33Obj instanceof Number) {
-                double shortFuelTrim = ((Number) io33Obj).doubleValue();
-                updateState(CHANNEL_OBD_SHORT_FUEL_TRIM, new QuantityType<>(shortFuelTrim, Units.PERCENT));
-            }
-
-            // io35: Fuel Pressure [kPa]
-            Object io35Obj = attributes.get("io35");
-            if (io35Obj instanceof Number) {
-                double fuelPressureKpa = ((Number) io35Obj).doubleValue();
-                // Convert kPa to Pa for OpenHAB (1 kPa = 1000 Pa)
-                double fuelPressurePa = fuelPressureKpa * 1000;
-                updateState(CHANNEL_OBD_FUEL_PRESSURE, new QuantityType<>(fuelPressurePa, SIUnits.PASCAL));
-            }
-
-            // io36: Engine RPM (actual RPM from OBD-II)
-            // This appears to be the real RPM value that varies with engine speed
-            Object io36Obj = attributes.get("io36");
-            if (io36Obj instanceof Number) {
-                int rpm = ((Number) io36Obj).intValue();
-                updateState(CHANNEL_OBD_RPM, new DecimalType(rpm));
-            }
-
-            // io37: Engine RPM Reported (standard OBD-II PID, often shows 0)
-            Object io37Obj = attributes.get("io37");
-            if (io37Obj instanceof Number) {
-                int rpmReported = ((Number) io37Obj).intValue();
-                updateState(CHANNEL_OBD_RPM_REPORTED, new DecimalType(rpmReported));
-            }
-
-            // io38: Vehicle Speed from OBD-II [km/h]
-            Object io38Obj = attributes.get("io38");
-            if (io38Obj instanceof Number) {
-                double obdSpeed = ((Number) io38Obj).doubleValue();
-                updateState(CHANNEL_OBD_SPEED, new QuantityType<>(obdSpeed, SIUnits.KILOMETRE_PER_HOUR));
-            }
-
-            // io48: Fuel Level [%] - Inverted (100 - value) because bike reports fuel used, not remaining
-            Object io48Obj = attributes.get("io48");
-            if (io48Obj instanceof Number) {
-                double fuelUsed = ((Number) io48Obj).doubleValue();
-                double fuelRemaining = 100.0 - fuelUsed;
-                updateState(CHANNEL_OBD_FUEL_LEVEL, new QuantityType<>(fuelRemaining, Units.PERCENT));
-            }
-
-            // OEM Odometer (actual vehicle odometer from CAN bus via OBD-II)
-            // This is different from the generic "odometer" field - when OBD-II is active,
-            // the odometer field contains the real vehicle odometer reading from CAN bus
-            // Check if OBD-II data is present (indicated by io30+ attributes)
-            if (io30Obj != null || io31Obj != null) {
-                Object oemOdometerObj = attributes.get("odometer");
-                if (oemOdometerObj instanceof Number) {
-                    double oemOdometerMeters = ((Number) oemOdometerObj).doubleValue();
-                    updateState(CHANNEL_OBD_OEM_ODOMETER, new QuantityType<>(oemOdometerMeters, SIUnits.METRE));
-                }
+            // CAN adapter (ALL-CAN300 / LV-CAN200 on an FMx6 tracker)
+            if (profile().hasCanAdapter()) {
+                updateCanChannels(attributes, recordTime(position));
             }
 
             // Process Bluetooth Beacon data (Teltonika FMM920 optional accessory)
@@ -641,6 +592,165 @@ public class TraccarDeviceHandler extends BaseThingHandler {
                 updateState(CHANNEL_LAST_UPDATE, new DateTimeType(dateTime));
             } catch (Exception e) {
                 logger.debug("Failed to parse device time: {}", e.getMessage());
+            }
+        }
+    }
+
+    private static @Nullable ZonedDateTime recordTime(Map<String, Object> position) {
+        Object deviceTimeObj = position.get("deviceTime");
+        if (deviceTimeObj instanceof String deviceTime) {
+            try {
+                return ZonedDateTime.parse(deviceTime);
+            } catch (Exception e) {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    private void updateCanChannels(Map<String, Object> attributes, @Nullable ZonedDateTime deviceTime) {
+        ZonedDateTime newest = newestCanRecord;
+        if (deviceTime != null && newest != null && deviceTime.isBefore(newest)) {
+            logger.debug("Device {}: record from {} is older than the newest applied ({}), CAN fields skipped",
+                    profile().deviceId, deviceTime, newest);
+            return;
+        }
+        Map<String, State> states = LvcanDecoder.decode(attributes,
+                deviceTime != null ? deviceTime : ZonedDateTime.now(), profile().gearParkWhenOff);
+        if (states.isEmpty()) {
+            return; // no LVCAN field in this record: every CAN channel stays as it was
+        }
+        if (deviceTime != null) {
+            newestCanRecord = deviceTime;
+        }
+        states.forEach((id, state) -> updateState(CHANNEL_GROUP_CAN + ChannelUID.CHANNEL_GROUP_SEPARATOR + id, state));
+    }
+
+    private void updateObdChannels(Map<String, Object> attributes) {
+        // Additional Teltonika IO Channels (experimental/unknown purpose)
+        // io42: Varies 84-94 (possibly intake air temperature or another sensor)
+        Object io42Obj = attributes.get("io42");
+        if (io42Obj instanceof Number) {
+            int io42 = ((Number) io42Obj).intValue();
+            updateState(CHANNEL_IO42, new DecimalType(io42));
+        }
+
+        // io49: Typically constant ~5816 (possibly battery voltage in mV)
+        Object io49Obj = attributes.get("io49");
+        if (io49Obj instanceof Number) {
+            int io49 = ((Number) io49Obj).intValue();
+            updateState(CHANNEL_IO49, new DecimalType(io49));
+        }
+
+        // io51: Varies 14000-14200 (possibly alternator voltage in mV)
+        Object io51Obj = attributes.get("io51");
+        if (io51Obj instanceof Number) {
+            int io51 = ((Number) io51Obj).intValue();
+            updateState(CHANNEL_IO51, new DecimalType(io51));
+        }
+
+        // OBD-II Trip Meters from ECU
+        // io199: Trip odometer 1 (in meters, convert to km)
+        Object io199Obj = attributes.get("io199");
+        if (io199Obj instanceof Number) {
+            double trip1Meters = ((Number) io199Obj).doubleValue();
+            updateState(CHANNEL_IO199, new QuantityType<>(trip1Meters / 1000.0, MetricPrefix.KILO(SIUnits.METRE)));
+        }
+
+        // io205: Trip odometer 2 (in meters, convert to km)
+        Object io205Obj = attributes.get("io205");
+        if (io205Obj instanceof Number) {
+            double trip2Meters = ((Number) io205Obj).doubleValue();
+            updateState(CHANNEL_IO205, new QuantityType<>(trip2Meters / 1000.0, MetricPrefix.KILO(SIUnits.METRE)));
+        }
+
+        // io389: Total vehicle mileage from ECU (in meters, convert to km)
+        Object io389Obj = attributes.get("io389");
+        if (io389Obj instanceof Number) {
+            double ecuOdometerMeters = ((Number) io389Obj).doubleValue();
+            updateState(CHANNEL_IO389,
+                    new QuantityType<>(ecuOdometerMeters / 1000.0, MetricPrefix.KILO(SIUnits.METRE)));
+        }
+
+        // OBD-II Data (Teltonika FMM920 with Bluetooth OBD-II dongle)
+        // These channels are only populated when an OBD-II dongle is paired and ignition is ON
+
+        // io30: Number of Diagnostic Trouble Codes (DTCs)
+        Object io30Obj = attributes.get("io30");
+        if (io30Obj instanceof Number) {
+            int dtcCount = ((Number) io30Obj).intValue();
+            updateState(CHANNEL_OBD_DTC_COUNT, new DecimalType(dtcCount));
+        }
+
+        // io31: Engine Load [%]
+        Object io31Obj = attributes.get("io31");
+        if (io31Obj instanceof Number) {
+            double engineLoad = ((Number) io31Obj).doubleValue();
+            updateState(CHANNEL_OBD_ENGINE_LOAD, new QuantityType<>(engineLoad, Units.PERCENT));
+        }
+
+        // io32: Coolant Temperature [°C]
+        Object io32Obj = attributes.get("io32");
+        if (io32Obj instanceof Number) {
+            double coolantTemp = ((Number) io32Obj).doubleValue();
+            updateState(CHANNEL_OBD_COOLANT_TEMP, new QuantityType<>(coolantTemp, SIUnits.CELSIUS));
+        }
+
+        // io33: Short Fuel Trim [%]
+        Object io33Obj = attributes.get("io33");
+        if (io33Obj instanceof Number) {
+            double shortFuelTrim = ((Number) io33Obj).doubleValue();
+            updateState(CHANNEL_OBD_SHORT_FUEL_TRIM, new QuantityType<>(shortFuelTrim, Units.PERCENT));
+        }
+
+        // io35: Fuel Pressure [kPa]
+        Object io35Obj = attributes.get("io35");
+        if (io35Obj instanceof Number) {
+            double fuelPressureKpa = ((Number) io35Obj).doubleValue();
+            // Convert kPa to Pa for OpenHAB (1 kPa = 1000 Pa)
+            double fuelPressurePa = fuelPressureKpa * 1000;
+            updateState(CHANNEL_OBD_FUEL_PRESSURE, new QuantityType<>(fuelPressurePa, SIUnits.PASCAL));
+        }
+
+        // io36: Engine RPM (actual RPM from OBD-II)
+        // This appears to be the real RPM value that varies with engine speed
+        Object io36Obj = attributes.get("io36");
+        if (io36Obj instanceof Number) {
+            int rpm = ((Number) io36Obj).intValue();
+            updateState(CHANNEL_OBD_RPM, new DecimalType(rpm));
+        }
+
+        // io37: Engine RPM Reported (standard OBD-II PID, often shows 0)
+        Object io37Obj = attributes.get("io37");
+        if (io37Obj instanceof Number) {
+            int rpmReported = ((Number) io37Obj).intValue();
+            updateState(CHANNEL_OBD_RPM_REPORTED, new DecimalType(rpmReported));
+        }
+
+        // io38: Vehicle Speed from OBD-II [km/h]
+        Object io38Obj = attributes.get("io38");
+        if (io38Obj instanceof Number) {
+            double obdSpeed = ((Number) io38Obj).doubleValue();
+            updateState(CHANNEL_OBD_SPEED, new QuantityType<>(obdSpeed, SIUnits.KILOMETRE_PER_HOUR));
+        }
+
+        // io48: Fuel Level [%] - Inverted (100 - value) because bike reports fuel used, not remaining
+        Object io48Obj = attributes.get("io48");
+        if (io48Obj instanceof Number) {
+            double fuelUsed = ((Number) io48Obj).doubleValue();
+            double fuelRemaining = 100.0 - fuelUsed;
+            updateState(CHANNEL_OBD_FUEL_LEVEL, new QuantityType<>(fuelRemaining, Units.PERCENT));
+        }
+
+        // OEM Odometer (actual vehicle odometer from CAN bus via OBD-II)
+        // This is different from the generic "odometer" field - when OBD-II is active,
+        // the odometer field contains the real vehicle odometer reading from CAN bus
+        // Check if OBD-II data is present (indicated by io30+ attributes)
+        if (io30Obj != null || io31Obj != null) {
+            Object oemOdometerObj = attributes.get("odometer");
+            if (oemOdometerObj instanceof Number) {
+                double oemOdometerMeters = ((Number) oemOdometerObj).doubleValue();
+                updateState(CHANNEL_OBD_OEM_ODOMETER, new QuantityType<>(oemOdometerMeters, SIUnits.METRE));
             }
         }
     }

@@ -16,6 +16,7 @@ import java.util.Set;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.openhab.core.thing.ThingTypeUID;
+import org.openhab.core.thing.type.ChannelGroupTypeUID;
 
 /**
  * The {@link TraccarBindingConstants} class defines common constants, which are
@@ -33,6 +34,10 @@ public class TraccarBindingConstants {
     public static final ThingTypeUID THING_TYPE_DEVICE = new ThingTypeUID(BINDING_ID, "device");
 
     public static final Set<ThingTypeUID> SUPPORTED_THING_TYPES_UIDS = Set.of(THING_TYPE_SERVER, THING_TYPE_DEVICE);
+
+    // CAN adapter channels: a group added to the thing only with canAdapter=lvcan
+    public static final String CHANNEL_GROUP_CAN = "can";
+    public static final ChannelGroupTypeUID CHANNEL_GROUP_TYPE_CAN = new ChannelGroupTypeUID(BINDING_ID, "can");
 
     // List of all Channel ids
     public static final String CHANNEL_GEOFENCE_EVENT = "geofenceEvent";

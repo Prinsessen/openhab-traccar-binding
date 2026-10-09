@@ -4,7 +4,7 @@
 
 This is a comprehensive GPS tracking binding that integrates Traccar server with openHAB. The binding supports real-time position updates via webhooks, extensive channel support, and handles multiple GPS protocols with their specific attribute differences.
 
-**Key Achievement**: Full dual-mode operation (polling + webhooks) with 101 channels per device, protocol-agnostic attribute handling, and automatic unit conversions.
+**Key Achievement**: Full dual-mode operation (polling + webhooks) with 101 channels per device (plus the 60-channel `can` group on a device with `canAdapter=lvcan`), protocol-agnostic attribute handling, and automatic unit conversions.
 
 ## Recent Updates (January 2026)
 
@@ -731,6 +731,17 @@ backs the old one up and installs the new one.
 
 ## CAN Adapter Channels
 
+**Built** (unreleased): `LvcanDecoder` decodes an FMx6 tracker's LVCAN fields
+into the `can` channel group, which `TraccarDeviceHandler.updateCanChannels()`
+adds to the thing only with `canAdapter=lvcan` (and removes without it). The
+decoder is pure - attributes in, channel states out - so every rule it keeps is
+covered by `LvcanDecoderTest`; run the tests in the build directory, because
+`deploy-binding.sh` skips them. To add a signal: a row in `VALUES` or the flag
+tables, the channel in the `can` channel-group-type, a test, and the README row
+marked tested or untested.
+
+The original design notes, still the reasoning behind it:
+
 A CAN adapter (ALL-CAN300 and similar) reports far more than a GPS tracker, and
 it needs a shape decided before the first channel is written.
 
@@ -817,7 +828,7 @@ This example demonstrates the full capabilities of the Traccar binding for build
 4. **Fuel consumption**: Calculate based on odometer + engine hours for compatible devices
 5. **Driver behavior scoring**: Aggregate harsh acceleration/braking/cornering events
 6. **Bluetooth beacon support**: For Teltonika devices with BLE sensors
-7. **CAN bus data**: Extract vehicle data for Teltonika with CAN adapter
+7. **CAN bus data**: done for LVCAN on FMx6 (see CAN Adapter Channels); the FMB family's LVCAN ids still to do
 8. **Temperature sensors**: Many industrial trackers support external temperature probes
 
 ## Resources

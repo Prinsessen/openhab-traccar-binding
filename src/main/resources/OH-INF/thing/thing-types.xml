@@ -239,8 +239,343 @@
 				<label>Device ID</label>
 				<description>Traccar device ID</description>
 			</parameter>
+			<parameter name="deviceFamily" type="text">
+				<label>Device Family</label>
+				<description>Which Teltonika family the tracker belongs to. The same AVL id means different things in
+					different families (AVL 113 is the internal battery level on the FMB family and Service Distance
+					on the FMx6 family).</description>
+				<options>
+					<option value="fmb">FMB / FMM / FMC9xx family, or not a Teltonika</option>
+					<option value="fmx6">FMx6 family (FMC650 and relatives)</option>
+					<option value="phone">Phone app (Traccar Client, OsmAnd)</option>
+				</options>
+				<limitToOptions>true</limitToOptions>
+				<default>fmb</default>
+			</parameter>
+			<parameter name="canAdapter" type="text">
+				<label>CAN Adapter</label>
+				<description>A Teltonika CAN adapter on the tracker (ALL-CAN300, LV-CAN200). With "lvcan" the device
+					gets the CAN channel group, and the OBD-II reading of io30-io48 is switched off, because the
+					adapter uses the same io numbers for other values. Tested with an FMx6 tracker.</description>
+				<options>
+					<option value="none">None</option>
+					<option value="lvcan">LVCAN (ALL-CAN300, LV-CAN200)</option>
+				</options>
+				<limitToOptions>true</limitToOptions>
+				<default>none</default>
+			</parameter>
+			<parameter name="obdDongle" type="text">
+				<label>OBD-II Dongle</label>
+				<description>Read io30-io48 as OBD-II data from a Bluetooth OBD-II dongle (the behaviour of every
+					earlier release). Set to "none" on a tracker without one, so those io numbers are not shown
+					under OBD-II names.</description>
+				<options>
+					<option value="bluetooth">Bluetooth OBD-II dongle</option>
+					<option value="none">None</option>
+				</options>
+				<limitToOptions>true</limitToOptions>
+				<default>bluetooth</default>
+				<advanced>true</advanced>
+			</parameter>
+			<parameter name="gearParkWhenOff" type="boolean">
+				<label>Gear P When Switched Off</label>
+				<description>CAN adapter only. A switched-off car sends no gear bit at all; with this on, no gear bit
+					while the car is not ready reads as P. Right for cars that engage P themselves (most electric
+					cars and automatics), wrong for a manual gearbox.</description>
+				<default>false</default>
+				<advanced>true</advanced>
+			</parameter>
 		</config-description>
 	</thing-type>
+
+	<!-- CAN adapter channels: added to a device only with canAdapter=lvcan -->
+	<channel-group-type id="can">
+		<label>CAN Adapter</label>
+		<description>Values and state flags from a Teltonika CAN adapter (ALL-CAN300, LV-CAN200). A value that a
+			record does not carry stays as it was: with the tracker's ignition off it sends no CAN values, and
+			some values only come while the car is ready to drive.</description>
+		<channels>
+			<channel id="batteryLevel" typeId="can-battery-level"/>
+			<channel id="batteryLevelSeen" typeId="can-seen">
+				<label>Battery Level Seen</label>
+			</channel>
+			<channel id="range" typeId="can-range"/>
+			<channel id="rangeSeen" typeId="can-seen">
+				<label>Range Seen</label>
+			</channel>
+			<channel id="odometer" typeId="can-odometer"/>
+			<channel id="odometerSeen" typeId="can-seen">
+				<label>Odometer Seen</label>
+			</channel>
+			<channel id="speed" typeId="can-speed"/>
+			<channel id="speedSeen" typeId="can-seen">
+				<label>Speed Seen</label>
+			</channel>
+			<channel id="pedal" typeId="can-pedal"/>
+			<channel id="pedalSeen" typeId="can-seen">
+				<label>Accelerator Pedal Seen</label>
+			</channel>
+			<channel id="doorFrontLeft" typeId="can-door">
+				<label>Door Front Left</label>
+			</channel>
+			<channel id="doorFrontRight" typeId="can-door">
+				<label>Door Front Right</label>
+			</channel>
+			<channel id="doorRearLeft" typeId="can-door">
+				<label>Door Rear Left</label>
+			</channel>
+			<channel id="doorRearRight" typeId="can-door">
+				<label>Door Rear Right</label>
+			</channel>
+			<channel id="hood" typeId="can-door">
+				<label>Hood</label>
+			</channel>
+			<channel id="trunk" typeId="can-door">
+				<label>Trunk</label>
+			</channel>
+			<channel id="ignition" typeId="can-flag">
+				<label>Ignition</label>
+			</channel>
+			<channel id="keyInserted" typeId="can-flag">
+				<label>Key in Ignition</label>
+			</channel>
+			<channel id="ready" typeId="can-flag">
+				<label>Ready to Drive</label>
+			</channel>
+			<channel id="workMode" typeId="can-work-mode"/>
+			<channel id="handbrake" typeId="can-flag">
+				<label>Handbrake</label>
+			</channel>
+			<channel id="footbrake" typeId="can-flag">
+				<label>Footbrake</label>
+			</channel>
+			<channel id="hazardSwitch" typeId="can-flag">
+				<label>Hazard Lights Switch</label>
+			</channel>
+			<channel id="chargeCable" typeId="can-flag">
+				<label>Charging Cable Connected</label>
+			</channel>
+			<channel id="charging" typeId="can-flag">
+				<label>Battery Charging</label>
+				<description>The car's own charging bit. On the tested car it went off at 98 % while the charger
+					still delivered power, and came back at 100 %: it marks the main charging phase.</description>
+			</channel>
+			<channel id="electricMotor" typeId="can-flag">
+				<label>Electric Motor Working</label>
+			</channel>
+			<channel id="closedByRemote" typeId="can-flag">
+				<label>Closed with Original Remote</label>
+			</channel>
+			<channel id="locked" typeId="can-flag">
+				<label>Central Locking Locked</label>
+			</channel>
+			<channel id="remoteClose" typeId="can-flag">
+				<label>Original Remote Close</label>
+			</channel>
+			<channel id="remoteOpen" typeId="can-flag">
+				<label>Original Remote Open</label>
+			</channel>
+			<channel id="remoteClose3x" typeId="can-flag">
+				<label>Original Remote Close 3x</label>
+			</channel>
+			<channel id="adapterSleep" typeId="can-flag">
+				<label>CAN Adapter Asleep</label>
+			</channel>
+			<channel id="gearPark" typeId="can-flag">
+				<label>Gear P</label>
+			</channel>
+			<channel id="gearReverse" typeId="can-flag">
+				<label>Gear R</label>
+			</channel>
+			<channel id="gearNeutral" typeId="can-flag">
+				<label>Gear N</label>
+			</channel>
+			<channel id="gearDrive" typeId="can-flag">
+				<label>Gear D</label>
+			</channel>
+			<channel id="gear" typeId="can-gear"/>
+			<channel id="sidelights" typeId="can-flag">
+				<label>Sidelights</label>
+			</channel>
+			<channel id="dippedBeam" typeId="can-flag">
+				<label>Dipped Headlights</label>
+			</channel>
+			<channel id="fullBeam" typeId="can-flag">
+				<label>Full Beam</label>
+			</channel>
+			<channel id="rearFog" typeId="can-flag">
+				<label>Rear Fog Light</label>
+			</channel>
+			<channel id="frontFog" typeId="can-flag">
+				<label>Front Fog Lights</label>
+			</channel>
+			<channel id="airConditioning" typeId="can-flag">
+				<label>Air Conditioning</label>
+			</channel>
+			<channel id="beltDriver" typeId="can-flag">
+				<label>Seat Belt Driver</label>
+			</channel>
+			<channel id="beltPassenger" typeId="can-flag">
+				<label>Seat Belt Passenger</label>
+			</channel>
+			<channel id="passengerPresent" typeId="can-flag">
+				<label>Front Passenger Present</label>
+			</channel>
+			<channel id="lampAbs" typeId="can-flag">
+				<label>Warning Lamp ABS</label>
+			</channel>
+			<channel id="lampEsp" typeId="can-flag">
+				<label>Warning Lamp ESP</label>
+			</channel>
+			<channel id="espOff" typeId="can-flag">
+				<label>ESP Switched Off</label>
+			</channel>
+			<channel id="lampBrake" typeId="can-flag">
+				<label>Warning Lamp Brake System</label>
+			</channel>
+			<channel id="lampAirbag" typeId="can-flag">
+				<label>Warning Lamp Airbag</label>
+			</channel>
+			<channel id="lampSteering" typeId="can-flag">
+				<label>Warning Lamp Power Steering</label>
+			</channel>
+			<channel id="lampTyre" typeId="can-flag">
+				<label>Warning Lamp Tyre Pressure</label>
+			</channel>
+			<channel id="can1Link" typeId="can-link">
+				<label>CAN1 Link</label>
+			</channel>
+			<channel id="can2Link" typeId="can-link">
+				<label>CAN2 Link</label>
+			</channel>
+			<channel id="lastData" typeId="can-seen">
+				<label>Last CAN Data</label>
+				<description>The device time of the last record that carried any CAN field.</description>
+			</channel>
+			<channel id="securityFlags" typeId="can-flag-word">
+				<label>Security Flags</label>
+			</channel>
+			<channel id="controlFlags" typeId="can-flag-word">
+				<label>Control Flags</label>
+			</channel>
+			<channel id="indicatorFlags" typeId="can-flag-word">
+				<label>Indicator Flags</label>
+			</channel>
+			<channel id="unmappedIo" typeId="can-unmapped-io"/>
+		</channels>
+	</channel-group-type>
+
+	<channel-type id="can-battery-level">
+		<item-type>Number:Dimensionless</item-type>
+		<label>Battery Level</label>
+		<description>AVL 142, Battery Level Percent: the traction battery's state of charge on an electric car.</description>
+		<category>BatteryLevel</category>
+		<state readOnly="true" pattern="%.0f %%"/>
+	</channel-type>
+
+	<channel-type id="can-range">
+		<item-type>Number:Length</item-type>
+		<label>Range</label>
+		<description>AVL 526, Vehicles Range On Battery. Only sent while the car is ready to drive.</description>
+		<state readOnly="true" pattern="%.0f km"/>
+	</channel-type>
+
+	<channel-type id="can-odometer">
+		<item-type>Number:Length</item-type>
+		<label>Odometer</label>
+		<description>AVL 36, Total Mileage: the car's own odometer. Only sent while the car is ready to drive.</description>
+		<state readOnly="true" pattern="%.1f km"/>
+	</channel-type>
+
+	<channel-type id="can-speed">
+		<item-type>Number:Speed</item-type>
+		<label>Speed</label>
+		<description>AVL 30, Vehicle Speed from the car. Only sent while the car is ready to drive.</description>
+		<state readOnly="true" pattern="%.0f km/h"/>
+	</channel-type>
+
+	<channel-type id="can-pedal">
+		<item-type>Number:Dimensionless</item-type>
+		<label>Accelerator Pedal</label>
+		<description>AVL 31, Accelerator Pedal Position.</description>
+		<state readOnly="true" pattern="%.0f %%"/>
+	</channel-type>
+
+	<channel-type id="can-seen">
+		<item-type>DateTime</item-type>
+		<label>Seen</label>
+		<description>The device time of the last record that carried this value, changed or not - its freshness.
+			A value that has stopped coming keeps its last state; this shows how old it is.</description>
+		<state readOnly="true"/>
+	</channel-type>
+
+	<channel-type id="can-door">
+		<item-type>Contact</item-type>
+		<label>Door</label>
+		<description>From AVL 143, Door Status.</description>
+		<state readOnly="true"/>
+	</channel-type>
+
+	<channel-type id="can-flag">
+		<item-type>Switch</item-type>
+		<label>CAN Flag</label>
+		<description>One bit of the adapter's state flags. Off means "no" or "not known": the flags carry no
+			validity mask, and a car that does not report a signal leaves its bit at 0.</description>
+		<state readOnly="true"/>
+	</channel-type>
+
+	<channel-type id="can-work-mode">
+		<item-type>String</item-type>
+		<label>Work Mode</label>
+		<description>Private or company mode, as the car reports it.</description>
+		<state readOnly="true">
+			<options>
+				<option value="private">Private</option>
+				<option value="company">Company</option>
+			</options>
+		</state>
+	</channel-type>
+
+	<channel-type id="can-gear">
+		<item-type>String</item-type>
+		<label>Gear</label>
+		<description>P, R, N or D from the gear bits; "-" when no gear bit is set (see the thing's "Gear P When
+			Switched Off").</description>
+		<state readOnly="true">
+			<options>
+				<option value="P">P</option>
+				<option value="R">R</option>
+				<option value="N">N</option>
+				<option value="D">D</option>
+				<option value="-">Unknown</option>
+			</options>
+		</state>
+	</channel-type>
+
+	<channel-type id="can-link" advanced="true">
+		<item-type>String</item-type>
+		<label>CAN Bus Link</label>
+		<description>The adapter's own view of one CAN bus: connected with data, connected without data, not
+			connected but needed, not connected and not needed.</description>
+		<state readOnly="true"/>
+	</channel-type>
+
+	<channel-type id="can-flag-word" advanced="true">
+		<item-type>String</item-type>
+		<label>Flag Word</label>
+		<description>A state flag word in hex with the numbers of its set bits - for identifying a new bit by
+			switching something on and off. P4 format (12710/12711/12712) when the tracker sends it, the legacy
+			format (47/38) otherwise.</description>
+		<state readOnly="true"/>
+	</channel-type>
+
+	<channel-type id="can-unmapped-io" advanced="true">
+		<item-type>String</item-type>
+		<label>Unmapped I/O</label>
+		<description>Every io element in the record that neither the CAN decoding nor the tracker itself accounts
+			for - where a new field shows up first.</description>
+		<state readOnly="true"/>
+	</channel-type>
 
 	<!-- Channel Types -->
 	<channel-type id="geofence-event">

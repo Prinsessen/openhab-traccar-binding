@@ -121,8 +121,21 @@ The binding automatically discovers devices configured in your Traccar server:
 | `beacon2Mac` | text | No | - | MAC address to assign to beacon2 slot |
 | `beacon3Mac` | text | No | - | MAC address to assign to beacon3 slot |
 | `beacon4Mac` | text | No | - | MAC address to assign to beacon4 slot |
+| `deviceFamily` | text | No | `fmb` | `fmb` (FMB / FMM / FMC9xx, or not a Teltonika), `fmx6` (FMC650 and relatives), `phone` |
+| `canAdapter` | text | No | `none` | `lvcan` for a Teltonika CAN adapter (ALL-CAN300, LV-CAN200) - adds the [CAN channels](#can-adapter-teltonika-all-can300--lv-can200) |
+| `obdDongle` | text | No | `bluetooth` | `none` stops io30-io48 being read as OBD-II data (advanced) |
+| `gearParkWhenOff` | boolean | No | `false` | CAN only: no gear bit while the car is not ready reads as P (advanced) |
 
 **Note**: Beacon parameters only apply to devices with BLE capability (e.g., Teltonika FMM920).
+
+**Why a thing says what it is.** Teltonika's AVL ids mean different things on
+different hardware: io38 is vehicle speed from a Bluetooth OBD-II dongle and the
+Control State Flags from a CAN adapter; AVL 113 is the internal battery level on
+the FMB family and Service Distance on the FMx6 family. The binding does not
+guess. The defaults decode exactly as every earlier release did, so existing
+things need no change. With `canAdapter=lvcan` the OBD-II reading is off
+whatever `obdDongle` says, and with `deviceFamily=fmx6` the `batteryLevel`
+channel is not filled.
 
 ## Channels
 
@@ -203,6 +216,141 @@ which one your hardware is using. So: fit it, read this channel, see what
 actually arrives, and only then decide what deserves a channel of its own.
 
 Truncated past 4000 characters, so one chatty device cannot fill an item.
+
+### CAN Adapter (Teltonika ALL-CAN300 / LV-CAN200)
+
+With `canAdapter=lvcan` the device gets a channel group `can` with the values
+and state flags a Teltonika CAN adapter reports through an FMx6-family tracker
+(FMC650 and relatives). Without it the group is not there, so a motorcycle never
+shows a traction battery.
+
+**Tested on one car so far**: a Toyota bZ4X with an FMC650 and an ALL-CAN300
+(read-only, contactless clamps). The AVL ids and bit numbers are Teltonika's and
+the same for every car - the adapter's program number tells it which car it is
+reading - but **which signals a car actually sends differs per car**. Channels
+marked *tested* below were confirmed on that car against the manufacturer's app
+or by switching the thing on and off; the rest are decoded as Teltonika
+documents them and are untested. Nothing is invented: a signal the car does not
+send leaves its channel as it was.
+
+#### Values
+
+| Channel | Type | AVL id | Notes | |
+|---------|------|--------|-------|---|
+| `can#batteryLevel` | Number:Dimensionless | 142 | Battery Level Percent - the traction battery on an EV | tested |
+| `can#range` | Number:Length | 526 | Vehicles Range On Battery (sent in metres) | tested |
+| `can#odometer` | Number:Length | 36 | Total Mileage (sent in metres) | tested |
+| `can#speed` | Number:Speed | 30 | Vehicle Speed | tested |
+| `can#pedal` | Number:Dimensionless | 31 | Accelerator Pedal Position | tested |
+| `can#batteryLevelSeen`, `can#rangeSeen`, `can#odometerSeen`, `can#speedSeen`, `can#pedalSeen` | DateTime | - | Device time of the last record that carried the value, changed or not | tested |
+| `can#lastData` | DateTime | - | Device time of the last record with any CAN field | tested |
+
+**Freshness is per value.** Range, odometer, speed and pedal are only sent while
+the car is ready to drive; the battery level and the flags also come while it
+charges. On the tested car the battery level was not sent at all for the last
+thirty minutes of a charge (from 98 % until it reported 100 %) while the flags
+kept coming. So `lastData` says the link is alive, and only a value's own
+`...Seen` channel says how old that value is.
+
+#### Doors (AVL 143)
+
+`can#doorFrontLeft`, `can#doorFrontRight`, `can#doorRearLeft`,
+`can#doorRearRight`, `can#hood`, `can#trunk` - Contact. Tested: front left, all
+closed.
+
+#### State flags
+
+Read from the P4 tables when the tracker sends them (12710 security, 12711
+control, 12712 indicator), from the legacy tables otherwise (47 security, 38
+control). The P4 tables are **separate I/O elements, off by default** in the
+Teltonika Configurator; enable them. All Switch unless noted.
+
+| Channels | Notes | |
+|----------|-------|---|
+| `can#ignition`, `can#keyInserted`, `can#ready`, `can#handbrake`, `can#footbrake` | | tested |
+| `can#workMode` (String) | `private` / `company` | tested |
+| `can#chargeCable` | | tested |
+| `can#charging` | The car's own charging bit. On the tested car it went OFF at 98 % while the charger still delivered 8 kW, and came back with 100 %: it marks the main phase, not "current is flowing" | tested |
+| `can#electricMotor`, `can#closedByRemote`, `can#locked` | | tested |
+| `can#gearPark`, `can#gearReverse`, `can#gearNeutral`, `can#gearDrive`, `can#gear` (String P/R/N/D/-) | A switched-off car sends no gear bit; see `gearParkWhenOff` | tested |
+| `can#adapterSleep` | P4 only | tested |
+| `can#sidelights`, `can#dippedBeam`, `can#fullBeam`, `can#rearFog` | | tested |
+| `can#frontFog` | | untested |
+| `can#airConditioning`, `can#beltDriver` | | tested |
+| `can#beltPassenger`, `can#passengerPresent` (P4 only) | | untested |
+| `can#lampAirbag` | Lit for a second at start-up (lamp test) | tested |
+| `can#lampAbs`, `can#lampEsp`, `can#espOff` (P4 only), `can#lampBrake`, `can#lampSteering`, `can#lampTyre` | | untested |
+| `can#hazardSwitch`, `can#remoteClose`, `can#remoteOpen`, `can#remoteClose3x` (P4 only) | | untested |
+
+A flag that is OFF means "no" **or** "not known": the tables carry no validity
+mask, and a car that does not report a signal leaves its bit at 0.
+
+#### Workbench (advanced)
+
+| Channel | Type | Description |
+|---------|------|-------------|
+| `can#can1Link`, `can#can2Link` | String | The adapter's view of each CAN bus: `connected, data`, `connected, no data`, `not connected, needed`, `not connected, not needed`. **The P4 and legacy formats order these four values differently** - the binding reads each in its own order |
+| `can#securityFlags`, `can#controlFlags`, `can#indicatorFlags` | String | The flag word in hex with its set bits, e.g. `0x0000000CA339  bits 0,3,4,5,8,9,13,15,18,19` - for finding a new bit by switching something on and off |
+| `can#unmappedIo` | String | Every io element in the record that neither the CAN decoding nor the tracker accounts for - where a new field shows up first |
+
+#### How the decoding behaves
+
+- **A field that is missing is not zero.** With the tracker's ignition off it
+  sends records with no CAN field at all; every CAN channel keeps its state.
+- **Records older than the newest applied are ignored** for the CAN channels.
+  After a cold boot the tracker uploads its buffer, and records can arrive out
+  of order.
+- Flag words are up to 64 bits and read as 64-bit integers.
+
+#### Example
+
+```openhab
+Thing traccar:device:myserver:car "Car" (traccar:server:myserver) [
+    deviceId=2, deviceFamily="fmx6", canAdapter="lvcan", gearParkWhenOff=true ]
+```
+
+```openhab
+Number:Dimensionless Car_Battery      "Battery [%.0f %%]"   { channel="traccar:device:myserver:car:can#batteryLevel" }
+DateTime             Car_Battery_Seen "Battery read [%1$tH:%1$tM]" { channel="traccar:device:myserver:car:can#batteryLevelSeen" }
+Number:Length        Car_Range        "Range [%.0f km]"     { channel="traccar:device:myserver:car:can#range", unit="km" }
+Switch               Car_Cable        "Cable in [%s]"       { channel="traccar:device:myserver:car:can#chargeCable" }
+Switch               Car_Locked       "Locked [%s]"         { channel="traccar:device:myserver:car:can#locked" }
+String               Car_Gear         "Gear [%s]"           { channel="traccar:device:myserver:car:can#gear" }
+```
+
+Range and odometer arrive in metres; give the item `unit="km"`.
+
+#### Setting up the tracker - what was learned the hard way
+
+- **COM1 baud rate: "Default", not 115200.** With 115200 the adapter read the
+  car and the tracker never heard it.
+- **Enable the P4 flag elements** (12710/12711/12712) in the Configurator's I/O
+  settings - they are off by default.
+- **With the tracker's ignition off, it sends no CAN values.** FMx6 ignition
+  sources are the digital inputs, power voltage and movement - nothing from CAN.
+  On an EV whose 12 V system drops to its resting voltage while charging, the
+  tracker may call the ignition off in the middle of a charge.
+- **Never enable LVCAN "Send data with 0, if ignition is off"**: it sends zeros,
+  which read as a battery at 0 %.
+- **Movement Source = CAN Speed** if the ignition is kept on through a charge;
+  with Movement Source = Ignition a parked, charging car records as moving, a
+  record every second.
+- **Switch off the I/O elements that never change** - every enabled element is
+  sent in every record. On an FMx6 that includes the accelerometer axes (see the
+  next point), IMSI and ICCID (which also identify the SIM card), unused digital
+  outputs and the network type. Read the configuration from the device before
+  editing it in the Configurator: saving an older file to the device puts back
+  whatever it held.
+- **Traccar shows `alarm=general` on an FMx6 that has no alarm.** Traccar's
+  Teltonika decoder reads AVL 236 as an alarm for every model; on the FMx6
+  family 236 is Axis X of the accelerometer. Set Axis X (and Y, Z if unused) to
+  None in the Configurator.
+- **Traccar's `totalDistance` counts the jump to 0,0** that a tracker reports
+  after a cold boot without a GPS fix. Prefer `can#odometer` for a car's
+  mileage, and consider `filter.zero=true` in Traccar's configuration.
+- On the FMx6 family, AVL 200 (sleep mode) reads 0 none, 1 deep sleep, 2 GPS
+  sleep, 3 online sleep - **not** the order of the sleep mode parameter in the
+  Configurator.
 
 ### BLE Beacon Tracking (Teltonika FMM920)
 
