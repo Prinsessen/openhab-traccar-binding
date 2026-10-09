@@ -6,6 +6,7 @@
 |----------|---------|----------|-------|
 | **[beacon-quickstart.md](beacon-quickstart.md)** | 5-minute setup guide | End users (quick start) | 190 |
 | **[beacon-tracking-example.md](beacon-tracking-example.md)** | Complete working configuration | End users (detailed) | 625 |
+| **[can-adapter-example.md](can-adapter-example.md)** | CAN adapter: complete example with JS rules | End users (cars with a CAN adapter) | 401 |
 | **[DEVELOPER-REFERENCE.md](DEVELOPER-REFERENCE.md)** | Technical reference card | Developers | 317 |
 | **[BEACON-DOCUMENTATION-SUMMARY.md](BEACON-DOCUMENTATION-SUMMARY.md)** | Implementation overview | Maintainers | 351 |
 | **[../README.md](../README.md)** | Main binding documentation | All users | 1818 |

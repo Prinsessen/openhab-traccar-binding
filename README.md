@@ -9,6 +9,7 @@ Traccar is an open-source GPS tracking system that supports over 200 GPS protoco
 - **[BLE Beacon Quick Start](docs/beacon-quickstart.md)** - 5-minute setup guide for beacon tracking
 - **[Complete Beacon Example](docs/beacon-tracking-example.md)** - Full working configuration with rules and automation
 - **[OBD-II Integration Guide](OBD-II_IMPLEMENTATION.md)** - Complete OBD-II setup including dongle auto-reconnection fix
+- **[CAN Adapter Example](docs/can-adapter-example.md)** - Car data from a Teltonika ALL-CAN300 / LV-CAN200: thing, items, sitemap and JavaScript rules (charge to a target, plug-in reminder, night check, warning lamps)
 
 ## Author
 
@@ -62,6 +63,14 @@ This binding supports the following thing types:
 - Device-specific event codes
 - GPS satellite count
 - GSM/cellular signal strength
+
+### CAN Bus Data (Teltonika ALL-CAN300 / LV-CAN200)
+- **The car's own data** through a CAN adapter on an FMx6 tracker (FMC650 and relatives)
+- **Values**: traction battery level, range, odometer, speed, accelerator pedal - each with the time it was last seen
+- **State**: ignition, ready to drive, gear, charging cable, charging, central locking, doors, trunk, hood, lights, seat belts, warning lamps
+- **Switched on per device** (`canAdapter=lvcan`): other trackers keep exactly the channels they had
+- Tested on a Toyota bZ4X; the README marks every channel tested or untested
+- See [CAN Adapter](#can-adapter-teltonika-all-can300--lv-can200) and the [complete example](docs/can-adapter-example.md)
 
 ### Geofencing Automation
 - Real-time geofence entry/exit events via webhooks

@@ -19,6 +19,7 @@ Complete working examples for the Traccar binding.
 8. [GPS Signal and Connectivity Monitoring](#gps-signal-and-connectivity-monitoring)
 9. [BLE Beacon Fall Detection (Advanced)](#ble-beacon-fall-detection-advanced)
 10. [Finding Out What a Device Actually Sends](#finding-out-what-a-device-actually-sends)
+11. [CAN Adapter (Car Data)](#can-adapter-car-data)
 
 ---
 
@@ -1331,3 +1332,22 @@ Questions about these examples? Contact:
 - **Nanna Agesen**
 - Email: Nanna@agesen.dk
 - GitHub: @Prinsessen
+
+---
+
+## CAN Adapter (Car Data)
+
+A car with a Teltonika CAN adapter (ALL-CAN300 / LV-CAN200) on an FMx6 tracker
+has its own page, because the rules depend on one idea the other examples do not
+need: a CAN value keeps its last state when the car stops sending it, so a rule
+checks the value's `...Seen` channel before acting on it.
+
+**[docs/can-adapter-example.md](docs/can-adapter-example.md)** - thing, items,
+sitemap, and JavaScript rules:
+
+- stop charging at a target battery level, never on a stale reading
+- plugged in but not charging for 15 minutes
+- evening reminder to plug in
+- night check: locked, doors shut, lights off
+- warning lamps that stay lit after the start-up lamp test
+- the car's own speed with the tracker's GPS speed as fallback

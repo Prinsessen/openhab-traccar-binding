@@ -20,6 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `gearParkWhenOff` treats a car that is not ready as parked: gear P, speed
   and pedal 0, instead of the last values sent before switch-off.
 - The first unit tests (`LvcanDecoderTest`).
+- `docs/can-adapter-example.md`: a complete CAN setup - thing, items, sitemap
+  and JavaScript rules (charge to a target, plug-in reminders, night check,
+  warning lamps, CAN speed with GPS fallback) - linked from the README and
+  EXAMPLES.md.
 
 ### Fixed
 - **Records out of order no longer move a device backwards.** A record older
