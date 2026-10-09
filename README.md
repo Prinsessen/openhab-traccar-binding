@@ -124,7 +124,7 @@ The binding automatically discovers devices configured in your Traccar server:
 | `deviceFamily` | text | No | `fmb` | `fmb` (FMB / FMM / FMC9xx, or not a Teltonika), `fmx6` (FMC650 and relatives), `phone` |
 | `canAdapter` | text | No | `none` | `lvcan` for a Teltonika CAN adapter (ALL-CAN300, LV-CAN200) - adds the [CAN channels](#can-adapter-teltonika-all-can300--lv-can200) |
 | `obdDongle` | text | No | `bluetooth` | `none` stops io30-io48 being read as OBD-II data (advanced) |
-| `gearParkWhenOff` | boolean | No | `false` | CAN only: no gear bit while the car is not ready reads as P (advanced) |
+| `gearParkWhenOff` | boolean | No | `false` | CAN only: the car counts as parked whenever it is not ready - gear P, speed and pedal 0 (advanced) |
 
 **Note**: Beacon parameters only apply to devices with BLE capability (e.g., Teltonika FMM920).
 
@@ -272,7 +272,7 @@ Teltonika Configurator; enable them. All Switch unless noted.
 | `can#chargeCable` | | tested |
 | `can#charging` | The car's own charging bit. On the tested car it went OFF at 98 % while the charger still delivered 8 kW, and came back with 100 %: it marks the main phase, not "current is flowing" | tested |
 | `can#electricMotor`, `can#closedByRemote`, `can#locked` | | tested |
-| `can#gearPark`, `can#gearReverse`, `can#gearNeutral`, `can#gearDrive`, `can#gear` (String P/R/N/D/-) | A switched-off car sends no gear bit; see `gearParkWhenOff` | tested |
+| `can#gearPark`, `can#gearReverse`, `can#gearNeutral`, `can#gearDrive`, `can#gear` (String P/R/N/D/-) | A switched-off car sends no gear bit, and no speed or pedal either; see `gearParkWhenOff` | tested |
 | `can#adapterSleep` | P4 only | tested |
 | `can#sidelights`, `can#dippedBeam`, `can#fullBeam`, `can#rearFog` | | tested |
 | `can#frontFog` | | untested |

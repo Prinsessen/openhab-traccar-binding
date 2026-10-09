@@ -153,6 +153,26 @@ public class LvcanDecoderTest {
     }
 
     @Test
+    public void parkedWhenOffMeansStandingStill() {
+        Map<String, Object> off = record("io12710", 0.0, "io142", 99.0); // not ready, no speed or pedal sent
+        Map<String, State> parked = LvcanDecoder.decode(off, T, true);
+        assertEquals(new QuantityType<>(0, SIUnits.KILOMETRE_PER_HOUR), parked.get("speed"));
+        assertEquals(new QuantityType<>(0, Units.PERCENT), parked.get("pedal"));
+        assertEquals(new DateTimeType(T), parked.get("speedSeen"));
+        assertNull(parked.get("range"), "range is still true when parked: left as it was");
+
+        Map<String, State> noOption = LvcanDecoder.decode(off, T, false);
+        assertNull(noOption.get("speed"), "without the option nothing is invented");
+
+        Map<String, Object> ready = record("io12710", (double) (1L << 13)); // ready, no speed in the record
+        assertNull(LvcanDecoder.decode(ready, T, true).get("speed"));
+
+        Map<String, Object> sent = record("io12710", 0.0, "io30", 3.0); // a speed that IS sent wins
+        assertEquals(new QuantityType<>(3.0, SIUnits.KILOMETRE_PER_HOUR),
+                LvcanDecoder.decode(sent, T, true).get("speed"));
+    }
+
+    @Test
     public void batteryLevelAndItsSeenTime() {
         Map<String, State> s = decode("io142", 64.0);
         assertEquals(new QuantityType<>(64.0, Units.PERCENT), s.get("batteryLevel"));

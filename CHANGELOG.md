@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   marks every channel tested or untested.
 - Device parameters `deviceFamily`, `canAdapter`, `obdDongle` and
   `gearParkWhenOff`. The defaults decode exactly as before.
+  `gearParkWhenOff` treats a car that is not ready as parked: gear P, speed
+  and pedal 0, instead of the last values sent before switch-off.
 - The first unit tests (`LvcanDecoderTest`).
 
 ### Fixed

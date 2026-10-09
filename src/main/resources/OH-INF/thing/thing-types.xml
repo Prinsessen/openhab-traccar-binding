@@ -278,10 +278,11 @@
 				<advanced>true</advanced>
 			</parameter>
 			<parameter name="gearParkWhenOff" type="boolean">
-				<label>Gear P When Switched Off</label>
-				<description>CAN adapter only. A switched-off car sends no gear bit at all; with this on, no gear bit
-					while the car is not ready reads as P. Right for cars that engage P themselves (most electric
-					cars and automatics), wrong for a manual gearbox.</description>
+				<label>Parked When Switched Off</label>
+				<description>CAN adapter only. Treat the car as parked whenever it is not ready to drive: no gear bit
+					reads as P, and speed and accelerator pedal read 0 (the car sends them only while ready, so the
+					last values before switch-off would otherwise stand for the whole stop). Right for cars that
+					engage P themselves (most electric cars and automatics), wrong for a manual gearbox.</description>
 				<default>false</default>
 				<advanced>true</advanced>
 			</parameter>

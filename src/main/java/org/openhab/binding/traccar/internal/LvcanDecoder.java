@@ -239,8 +239,9 @@ public class LvcanDecoder {
      *
      * @param attributes the record's attributes as Traccar delivers them
      * @param recordTime the record's device time; it becomes the "seen" and "last data" time
-     * @param gearParkWhenOff report P when no gear bit is set and the car is not ready - right for cars
-     *            that engage P themselves when switched off, wrong for a manual gearbox
+     * @param gearParkWhenOff the car is parked whenever it is not ready: no gear bit reads P, and a record
+     *            without speed or pedal reads 0 for them - right for cars that engage P themselves when
+     *            switched off, wrong for a manual gearbox
      * @return channel id (inside the {@code can} group) to state; empty when the record has no LVCAN field
      */
     public static Map<String, State> decode(Map<String, Object> attributes, ZonedDateTime recordTime,
@@ -320,14 +321,26 @@ public class LvcanDecoder {
                 gear = bit(security, 32) ? "P" : bit(security, 39) ? "R" : bit(security, 34) ? "N"
                         : bit(security, 35) ? "D" : "-";
             }
-            if ("-".equals(gear) && gearParkWhenOff) {
-                Long control = words.get(Table.CONTROL);
-                boolean ready = p4 ? bit(security, 13) : control != null && bit(control, 24);
-                if (!ready) {
-                    gear = "P";
-                }
+            Long control = words.get(Table.CONTROL);
+            boolean ready = p4 ? bit(security, 13) : control != null && bit(control, 24);
+            if ("-".equals(gear) && gearParkWhenOff && !ready) {
+                gear = "P";
             }
             out.put(GEAR, new StringType(gear));
+
+            // Parked when switched off: the car sends speed and pedal only while ready, so the last
+            // values before switch-off (2 km/h rolling into the parking space) would stand for the
+            // whole stop. Not ready and parked means standing still with the foot off the pedal.
+            if (gearParkWhenOff && !ready) {
+                for (Value v : VALUES) {
+                    if ((SPEED.equals(v.channel()) || PEDAL.equals(v.channel()))
+                            && number(attributes.get("io" + v.avlId())) == null) {
+                        Unit<?> unit = SPEED.equals(v.channel()) ? SIUnits.KILOMETRE_PER_HOUR : Units.PERCENT;
+                        out.put(v.channel(), new QuantityType<>(0, unit));
+                        out.put(v.channel() + SEEN_SUFFIX, seen);
+                    }
+                }
+            }
         }
 
         if (!any) {
