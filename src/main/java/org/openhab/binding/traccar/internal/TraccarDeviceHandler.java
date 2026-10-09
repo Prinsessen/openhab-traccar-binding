@@ -48,6 +48,9 @@ import org.openhab.core.thing.binding.BridgeHandler;
 import org.openhab.core.thing.binding.ThingHandlerCallback;
 import org.openhab.core.thing.binding.builder.ChannelBuilder;
 import org.openhab.core.thing.binding.builder.ThingBuilder;
+import org.openhab.core.thing.type.ChannelDefinition;
+import org.openhab.core.thing.type.ThingType;
+import org.openhab.core.thing.type.ThingTypeRegistry;
 import org.openhab.core.types.Command;
 import org.openhab.core.types.RefreshType;
 import org.openhab.core.types.State;
@@ -88,8 +91,11 @@ public class TraccarDeviceHandler extends BaseThingHandler {
     /** A device clock this far ahead of Traccar's server clock is not trusted to move the bar. */
     private static final long MAX_CLOCK_AHEAD_MINUTES = 10;
 
-    public TraccarDeviceHandler(Thing thing) {
+    private final ThingTypeRegistry thingTypeRegistry;
+
+    public TraccarDeviceHandler(Thing thing, ThingTypeRegistry thingTypeRegistry) {
         super(thing);
+        this.thingTypeRegistry = thingTypeRegistry;
     }
 
     @Override
@@ -115,6 +121,7 @@ public class TraccarDeviceHandler extends BaseThingHandler {
             return;
         }
 
+        restoreLostChannels();
         updateCanChannels();
 
         updateStatus(ThingStatus.UNKNOWN);
@@ -124,6 +131,52 @@ public class TraccarDeviceHandler extends BaseThingHandler {
     private TraccarDeviceConfiguration profile() {
         TraccarDeviceConfiguration configuration = config;
         return configuration != null ? configuration : new TraccarDeviceConfiguration();
+    }
+
+    /**
+     * Puts back every channel the thing type defines that the thing does not have.
+     *
+     * <p>
+     * When the binding's JAR is replaced, core can rebuild a thing from a .things file before this
+     * bundle has registered its channel types; it then logs "Could not create channel ... channel type
+     * ... could not be found" once per channel and creates the thing without them. State updates still
+     * reach the items (they travel by link), so nothing looks wrong, but the thing shows no channels and
+     * stays that way until the bundle is restarted. Seen on a motorcycle tracker after the third JAR
+     * replace of an evening: all 101 channels gone. By the time the handler initializes, the channel
+     * types exist, so the builders come from core's registry exactly as the thing type declares them.
+     */
+    private void restoreLostChannels() {
+        ThingHandlerCallback callback = getCallback();
+        ThingType thingType = thingTypeRegistry.getThingType(getThing().getThingTypeUID());
+        if (callback == null || thingType == null) {
+            return;
+        }
+        List<Channel> missing = new ArrayList<>();
+        for (ChannelDefinition definition : thingType.getChannelDefinitions()) {
+            ChannelUID uid = new ChannelUID(getThing().getUID(), definition.getId());
+            if (getThing().getChannel(uid) != null) {
+                continue;
+            }
+            try {
+                ChannelBuilder builder = callback.createChannelBuilder(uid, definition.getChannelTypeUID());
+                String label = definition.getLabel();
+                if (label != null) {
+                    builder.withLabel(label);
+                }
+                missing.add(builder.build());
+            } catch (IllegalArgumentException e) {
+                logger.debug("Device {}: channel {} not put back: {}", profile().deviceId, definition.getId(),
+                        e.getMessage());
+            }
+        }
+        if (!missing.isEmpty()) {
+            ThingBuilder builder = editThing();
+            missing.forEach(builder::withChannel);
+            updateThing(builder.build());
+            logger.info(
+                    "Device {}: {} channel(s) put back that the thing had lost (a JAR replace can rebuild a .things thing before the channel types exist)",
+                    profile().deviceId, missing.size());
+        }
     }
 
     /**

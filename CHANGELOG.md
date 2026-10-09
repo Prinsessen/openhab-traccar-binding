@@ -26,6 +26,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   EXAMPLES.md.
 
 ### Fixed
+- **A thing that lost its channels gets them back.** When the binding's JAR is
+  replaced, openHAB can rebuild a thing from a `.things` file before the
+  binding's channel types are registered, and the thing comes back with no
+  channels (the log says "Could not create channel ... could not be found"). The
+  device handler now puts back every channel the thing type defines that the
+  thing lacks, when it initializes, and logs how many.
 - **Records out of order no longer move a device backwards.** A record older
   than the newest one applied is skipped, for every device and every channel.
   Teltonika trackers upload their buffer after a cold boot, and the records of

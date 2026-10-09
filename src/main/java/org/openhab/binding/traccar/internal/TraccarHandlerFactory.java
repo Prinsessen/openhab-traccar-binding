@@ -24,6 +24,7 @@ import org.openhab.core.thing.ThingTypeUID;
 import org.openhab.core.thing.binding.BaseThingHandlerFactory;
 import org.openhab.core.thing.binding.ThingHandler;
 import org.openhab.core.thing.binding.ThingHandlerFactory;
+import org.openhab.core.thing.type.ThingTypeRegistry;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -39,10 +40,13 @@ import org.osgi.service.component.annotations.Reference;
 public class TraccarHandlerFactory extends BaseThingHandlerFactory {
 
     private final HttpClient httpClient;
+    private final ThingTypeRegistry thingTypeRegistry;
 
     @Activate
-    public TraccarHandlerFactory(@Reference HttpClientFactory httpClientFactory) {
+    public TraccarHandlerFactory(@Reference HttpClientFactory httpClientFactory,
+            @Reference ThingTypeRegistry thingTypeRegistry) {
         this.httpClient = httpClientFactory.getCommonHttpClient();
+        this.thingTypeRegistry = thingTypeRegistry;
     }
 
     @Override
@@ -57,7 +61,7 @@ public class TraccarHandlerFactory extends BaseThingHandlerFactory {
         if (THING_TYPE_SERVER.equals(thingTypeUID)) {
             return new TraccarServerHandler((Bridge) thing, httpClient);
         } else if (THING_TYPE_DEVICE.equals(thingTypeUID)) {
-            return new TraccarDeviceHandler(thing);
+            return new TraccarDeviceHandler(thing, thingTypeRegistry);
         }
 
         return null;
