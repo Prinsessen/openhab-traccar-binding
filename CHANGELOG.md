@@ -19,6 +19,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `gearParkWhenOff`. The defaults decode exactly as before.
 - The first unit tests (`LvcanDecoderTest`).
 
+### Fixed
+- **Records out of order no longer move a device backwards.** A record older
+  than the newest one applied is skipped, for every device and every channel.
+  Teltonika trackers upload their buffer after a cold boot, and the records of
+  one webhook batch are handled on parallel threads: `lastUpdate` went
+  backwards, and a car with a CAN adapter read "unlocked, gear N" after its
+  "locked, P" record. The order check and the updates of a record now happen
+  under one lock. A device clock more than 10 minutes ahead of Traccar's server
+  clock does not move the bar, so a wrong clock cannot block later records.
+
 ### Changed
 - io30-io48 are read as OBD-II data only when the thing has no CAN adapter
   (and `obdDongle` is not `none`): on a CAN adapter the same numbers carry other

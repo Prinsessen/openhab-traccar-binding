@@ -297,9 +297,9 @@ mask, and a car that does not report a signal leaves its bit at 0.
 
 - **A field that is missing is not zero.** With the tracker's ignition off it
   sends records with no CAN field at all; every CAN channel keeps its state.
-- **Records older than the newest applied are ignored** for the CAN channels.
-  After a cold boot the tracker uploads its buffer, and records can arrive out
-  of order.
+- **Records older than the newest applied are ignored** - for every device and
+  every channel, not only CAN. After a cold boot a tracker uploads its buffer,
+  and the records of one batch can arrive out of order.
 - Flag words are up to 64 bits and read as 64-bit integers.
 
 #### Example

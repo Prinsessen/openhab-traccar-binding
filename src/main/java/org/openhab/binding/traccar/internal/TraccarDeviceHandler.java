@@ -71,19 +71,22 @@ public class TraccarDeviceHandler extends BaseThingHandler {
     private @Nullable NominatimGeocoder geocoder;
 
     /**
-     * Device time of the newest record whose CAN fields were applied. Records do not always arrive in
-     * order - after a cold boot the tracker uploads its buffer, and with a long send period they come in
-     * batches - and an old record must not overwrite a newer state (ready, doors, battery level).
+     * Device time of the newest record applied. Records do not always arrive in order - after a cold
+     * boot a Teltonika uploads its buffer, and with a long send period they come in batches - and an
+     * older record must not overwrite a newer state: the last update time went backwards, and a CAN
+     * car read "unlocked, gear N" after its "locked, P" record.
      */
-    private @Nullable ZonedDateTime newestCanRecord;
+    private @Nullable ZonedDateTime newestRecord;
 
     /**
-     * Webhook records of one batch are handled on parallel threads. Check, decode and apply happen
-     * under this lock, or an older record that passed the check first can be applied last - seen on
-     * the first live test: the car read "unlocked, gear N" after its "locked, P" record, until the
-     * next record eleven seconds later.
+     * The records of one webhook batch are handled on parallel threads: the order check and the
+     * channel updates of a record happen under this lock, or an older record that passed the check
+     * first is applied last.
      */
-    private final Object canLock = new Object();
+    private final Object recordLock = new Object();
+
+    /** A device clock this far ahead of Traccar's server clock is not trusted to move the bar. */
+    private static final long MAX_CLOCK_AHEAD_MINUTES = 10;
 
     public TraccarDeviceHandler(Thing thing) {
         super(thing);
@@ -279,6 +282,25 @@ public class TraccarDeviceHandler extends BaseThingHandler {
     }
 
     private void updatePositionChannels(Map<String, Object> position) {
+        ZonedDateTime deviceTime = parseTime(position.get("deviceTime"));
+        synchronized (recordLock) {
+            ZonedDateTime newest = newestRecord;
+            if (deviceTime != null && newest != null && deviceTime.isBefore(newest)) {
+                logger.debug("Device {}: record from {} is older than the newest applied ({}), skipped",
+                        profile().deviceId, deviceTime, newest);
+                return;
+            }
+            if (deviceTime != null) {
+                ZonedDateTime serverTime = parseTime(position.get("serverTime"));
+                if (serverTime == null || !deviceTime.isAfter(serverTime.plusMinutes(MAX_CLOCK_AHEAD_MINUTES))) {
+                    newestRecord = deviceTime;
+                }
+            }
+            applyRecord(position, deviceTime);
+        }
+    }
+
+    private void applyRecord(Map<String, Object> position, @Nullable ZonedDateTime deviceTime) {
         // Update position (latitude, longitude, altitude)
         Object latObj = position.get("latitude");
         Object lonObj = position.get("longitude");
@@ -585,7 +607,7 @@ public class TraccarDeviceHandler extends BaseThingHandler {
 
             // CAN adapter (ALL-CAN300 / LV-CAN200 on an FMx6 tracker)
             if (profile().hasCanAdapter()) {
-                updateCanChannels(attributes, recordTime(position));
+                updateCanChannels(attributes, deviceTime);
             }
 
             // Process Bluetooth Beacon data (Teltonika FMM920 optional accessory)
@@ -594,22 +616,17 @@ public class TraccarDeviceHandler extends BaseThingHandler {
         }
 
         // Update last update time
-        Object deviceTimeObj = position.get("deviceTime");
-        if (deviceTimeObj instanceof String deviceTime) {
-            try {
-                ZonedDateTime dateTime = ZonedDateTime.parse(deviceTime);
-                updateState(CHANNEL_LAST_UPDATE, new DateTimeType(dateTime));
-            } catch (Exception e) {
-                logger.debug("Failed to parse device time: {}", e.getMessage());
-            }
+        if (deviceTime != null) {
+            updateState(CHANNEL_LAST_UPDATE, new DateTimeType(deviceTime));
+        } else if (position.get("deviceTime") != null) {
+            logger.debug("Failed to parse device time: {}", position.get("deviceTime"));
         }
     }
 
-    private static @Nullable ZonedDateTime recordTime(Map<String, Object> position) {
-        Object deviceTimeObj = position.get("deviceTime");
-        if (deviceTimeObj instanceof String deviceTime) {
+    private static @Nullable ZonedDateTime parseTime(@Nullable Object value) {
+        if (value instanceof String text) {
             try {
-                return ZonedDateTime.parse(deviceTime);
+                return ZonedDateTime.parse(text);
             } catch (Exception e) {
                 return null;
             }
@@ -618,24 +635,11 @@ public class TraccarDeviceHandler extends BaseThingHandler {
     }
 
     private void updateCanChannels(Map<String, Object> attributes, @Nullable ZonedDateTime deviceTime) {
-        synchronized (canLock) {
-            ZonedDateTime newest = newestCanRecord;
-            if (deviceTime != null && newest != null && deviceTime.isBefore(newest)) {
-                logger.debug("Device {}: record from {} is older than the newest applied ({}), CAN fields skipped",
-                        profile().deviceId, deviceTime, newest);
-                return;
-            }
-            Map<String, State> states = LvcanDecoder.decode(attributes,
-                    deviceTime != null ? deviceTime : ZonedDateTime.now(), profile().gearParkWhenOff);
-            if (states.isEmpty()) {
-                return; // no LVCAN field in this record: every CAN channel stays as it was
-            }
-            if (deviceTime != null) {
-                newestCanRecord = deviceTime;
-            }
-            states.forEach(
-                    (id, state) -> updateState(CHANNEL_GROUP_CAN + ChannelUID.CHANNEL_GROUP_SEPARATOR + id, state));
-        }
+        // the record is the newest applied: updatePositionChannels() skipped any older one
+        Map<String, State> states = LvcanDecoder.decode(attributes,
+                deviceTime != null ? deviceTime : ZonedDateTime.now(), profile().gearParkWhenOff);
+        // empty when the record has no LVCAN field: every CAN channel stays as it was
+        states.forEach((id, state) -> updateState(CHANNEL_GROUP_CAN + ChannelUID.CHANNEL_GROUP_SEPARATOR + id, state));
     }
 
     private void updateObdChannels(Map<String, Object> attributes) {
