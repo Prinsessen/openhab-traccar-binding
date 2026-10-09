@@ -477,6 +477,13 @@ Both mechanisms call the same `updatePositionChannels()` method:
 
 This ensures consistent channel updates regardless of source.
 
+**Order guard**: `updatePositionChannels()` skips a record whose `deviceTime` is
+older than the newest one applied, and runs the check and all channel updates
+under one lock (`recordLock`). Webhook records of one batch arrive on parallel
+Jetty threads; without the lock an older record could pass the check first and
+be applied last. A `deviceTime` more than 10 minutes ahead of `serverTime` is
+applied but does not move the bar.
+
 ## Unit Conversion Best Practices
 
 ### DO: Send Base Units, Let OpenHAB Convert

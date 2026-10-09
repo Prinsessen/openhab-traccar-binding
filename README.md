@@ -242,7 +242,7 @@ send leaves its channel as it was.
 | `can#odometer` | Number:Length | 36 | Total Mileage (sent in metres) | tested |
 | `can#speed` | Number:Speed | 30 | Vehicle Speed | tested |
 | `can#pedal` | Number:Dimensionless | 31 | Accelerator Pedal Position | tested |
-| `can#batteryLevelSeen`, `can#rangeSeen`, `can#odometerSeen`, `can#speedSeen`, `can#pedalSeen` | DateTime | - | Device time of the last record that carried the value, changed or not | tested |
+| `can#batteryLevelSeen`, `can#rangeSeen`, `can#odometerSeen`, `can#speedSeen`, `can#pedalSeen` | DateTime | - | Device time of the last record that carried the value, changed or not (with `gearParkWhenOff`, also of a "not ready" record that set speed and pedal to 0) | tested |
 | `can#lastData` | DateTime | - | Device time of the last record with any CAN field | tested |
 
 **Freshness is per value.** Range, odometer, speed and pedal are only sent while
@@ -295,8 +295,10 @@ mask, and a car that does not report a signal leaves its bit at 0.
 
 #### How the decoding behaves
 
-- **A field that is missing is not zero.** With the tracker's ignition off it
-  sends records with no CAN field at all; every CAN channel keeps its state.
+- **A field that is missing is not zero.** A record without a CAN field leaves
+  every CAN channel as it was. The one exception is opt-in: with
+  `gearParkWhenOff`, a record that says the car is not ready sets speed and
+  pedal to 0 (and gear to P when no gear bit is set).
 - **Records older than the newest applied are ignored** - for every device and
   every channel, not only CAN. After a cold boot a tracker uploads its buffer,
   and the records of one batch can arrive out of order.
@@ -326,10 +328,13 @@ Range and odometer arrive in metres; give the item `unit="km"`.
   car and the tracker never heard it.
 - **Enable the P4 flag elements** (12710/12711/12712) in the Configurator's I/O
   settings - they are off by default.
-- **With the tracker's ignition off, it sends no CAN values.** FMx6 ignition
-  sources are the digital inputs, power voltage and movement - nothing from CAN.
-  On an EV whose 12 V system drops to its resting voltage while charging, the
-  tracker may call the ignition off in the middle of a charge.
+- **The tracker reads the car properly only while its own ignition is on.**
+  FMx6 ignition sources are the digital inputs, power voltage and movement -
+  nothing from CAN. With its ignition off, the tested tracker sent records with
+  no CAN field at all during a charge, and while driving it kept sending the
+  flags but reported the speed as 0. On an EV whose 12 V system drops to its
+  resting voltage while charging, the tracker may call the ignition off in the
+  middle of a charge.
 - **On an EV, power voltage alone is not a reliable ignition.** With the 12 V
   battery full, the car's DC-DC converter can hold it at float (about 12.5-12.8 V)
   even while driving. A tracker whose ignition is "power voltage above X" then
