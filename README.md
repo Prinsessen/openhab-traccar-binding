@@ -330,6 +330,13 @@ Range and odometer arrive in metres; give the item `unit="km"`.
   sources are the digital inputs, power voltage and movement - nothing from CAN.
   On an EV whose 12 V system drops to its resting voltage while charging, the
   tracker may call the ignition off in the middle of a charge.
+- **On an EV, power voltage alone is not a reliable ignition.** With the 12 V
+  battery full, the car's DC-DC converter can hold it at float (about 12.5-12.8 V)
+  even while driving. A tracker whose ignition is "power voltage above X" then
+  calls the ignition off mid-drive, drops to its stop settings and reports the
+  CAN speed as 0. Add Movement to the ignition source (parameter 101 = 48: power
+  voltage + movement, the sources are OR'ed), or better, wire a digital input to
+  a fuse that is live only while the car is on.
 - **Never enable LVCAN "Send data with 0, if ignition is off"**: it sends zeros,
   which read as a battery at 0 %.
 - **Movement Source = CAN Speed** if the ignition is kept on through a charge;
