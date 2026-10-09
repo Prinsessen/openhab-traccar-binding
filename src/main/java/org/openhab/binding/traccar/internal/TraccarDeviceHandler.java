@@ -77,6 +77,14 @@ public class TraccarDeviceHandler extends BaseThingHandler {
      */
     private @Nullable ZonedDateTime newestCanRecord;
 
+    /**
+     * Webhook records of one batch are handled on parallel threads. Check, decode and apply happen
+     * under this lock, or an older record that passed the check first can be applied last - seen on
+     * the first live test: the car read "unlocked, gear N" after its "locked, P" record, until the
+     * next record eleven seconds later.
+     */
+    private final Object canLock = new Object();
+
     public TraccarDeviceHandler(Thing thing) {
         super(thing);
     }
@@ -610,21 +618,24 @@ public class TraccarDeviceHandler extends BaseThingHandler {
     }
 
     private void updateCanChannels(Map<String, Object> attributes, @Nullable ZonedDateTime deviceTime) {
-        ZonedDateTime newest = newestCanRecord;
-        if (deviceTime != null && newest != null && deviceTime.isBefore(newest)) {
-            logger.debug("Device {}: record from {} is older than the newest applied ({}), CAN fields skipped",
-                    profile().deviceId, deviceTime, newest);
-            return;
+        synchronized (canLock) {
+            ZonedDateTime newest = newestCanRecord;
+            if (deviceTime != null && newest != null && deviceTime.isBefore(newest)) {
+                logger.debug("Device {}: record from {} is older than the newest applied ({}), CAN fields skipped",
+                        profile().deviceId, deviceTime, newest);
+                return;
+            }
+            Map<String, State> states = LvcanDecoder.decode(attributes,
+                    deviceTime != null ? deviceTime : ZonedDateTime.now(), profile().gearParkWhenOff);
+            if (states.isEmpty()) {
+                return; // no LVCAN field in this record: every CAN channel stays as it was
+            }
+            if (deviceTime != null) {
+                newestCanRecord = deviceTime;
+            }
+            states.forEach(
+                    (id, state) -> updateState(CHANNEL_GROUP_CAN + ChannelUID.CHANNEL_GROUP_SEPARATOR + id, state));
         }
-        Map<String, State> states = LvcanDecoder.decode(attributes,
-                deviceTime != null ? deviceTime : ZonedDateTime.now(), profile().gearParkWhenOff);
-        if (states.isEmpty()) {
-            return; // no LVCAN field in this record: every CAN channel stays as it was
-        }
-        if (deviceTime != null) {
-            newestCanRecord = deviceTime;
-        }
-        states.forEach((id, state) -> updateState(CHANNEL_GROUP_CAN + ChannelUID.CHANNEL_GROUP_SEPARATOR + id, state));
     }
 
     private void updateObdChannels(Map<String, Object> attributes) {
