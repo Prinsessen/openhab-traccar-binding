@@ -319,7 +319,7 @@ end
 
 ```openhab
 Number:Dimensionless MyCar_Battery "Battery [%.0f %%]" 
-    {channel="traccar:device:demo:mycar:batteryLevel"}
+    {channel="traccar:device:demo:mycar:batteryLevel", unit="%" }
 
 rule "Low Battery Alert"
 when
@@ -596,7 +596,7 @@ Number Vehicle_GpsSatellites "GPS Satellites [%d]" <network>
     {channel="traccar:device:server:car:gpsSatellites"}
 
 Number:Dimensionless Vehicle_GsmSignal "GSM Signal [%.0f %%]" <qualityofservice>
-    {channel="traccar:device:server:car:gsmSignal"}
+    {channel="traccar:device:server:car:gsmSignal", unit="%" }
 
 Switch Vehicle_Motion "Motion" 
     {channel="traccar:device:server:car:motion"}
@@ -661,9 +661,9 @@ end
 Number Vehicle1_GpsSatellites "GPS Sats [%d]" 
     {channel="traccar:device:server:vehicle1:gpsSatellites"}
 Number:Dimensionless Vehicle1_GsmSignal "GSM [%.0f %%]" 
-    {channel="traccar:device:server:vehicle1:gsmSignal"}
+    {channel="traccar:device:server:vehicle1:gsmSignal", unit="%" }
 Number:Dimensionless Vehicle1_BatteryLevel "Battery [%.0f %%]" 
-    {channel="traccar:device:server:vehicle1:batteryLevel"}
+    {channel="traccar:device:server:vehicle1:batteryLevel", unit="%" }
 Number:Length Vehicle1_Accuracy "Accuracy [%.1f m]" 
     {channel="traccar:device:server:vehicle1:accuracy"}
 
@@ -671,9 +671,9 @@ Number:Length Vehicle1_Accuracy "Accuracy [%.1f m]"
 Number Vehicle2_GpsSatellites "GPS Sats [%d]" 
     {channel="traccar:device:server:vehicle2:gpsSatellites"}
 Number:Dimensionless Vehicle2_GsmSignal "GSM [%.0f %%]" 
-    {channel="traccar:device:server:vehicle2:gsmSignal"}
+    {channel="traccar:device:server:vehicle2:gsmSignal", unit="%" }
 Number:Dimensionless Vehicle2_BatteryLevel "Battery [%.0f %%]" 
-    {channel="traccar:device:server:vehicle2:batteryLevel"}
+    {channel="traccar:device:server:vehicle2:batteryLevel", unit="%" }
 ```
 
 **health.sitemap:**

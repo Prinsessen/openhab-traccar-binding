@@ -81,7 +81,7 @@ Location             Car_Position       "Position"              { channel="tracc
 Number:Speed         Car_Speed          "Speed [%.0f %unit%]"   { channel="traccar:device:gpsserver:car:speed" }
 String               Car_Address        "Address [%s]"          { channel="traccar:device:gpsserver:car:address" }
 Switch               Car_Motion         "Moving"                { channel="traccar:device:gpsserver:car:motion" }
-Number:Dimensionless Car_Battery        "Battery [%.0f %%]"     { channel="traccar:device:gpsserver:car:batteryLevel" }
+Number:Dimensionless Car_Battery        "Battery [%.0f %%]"     { channel="traccar:device:gpsserver:car:batteryLevel", unit="%" }
 String               Car_Geofence_Event "Geofence [%s]"         { channel="traccar:device:gpsserver:car:geofenceEvent" }
 String               Car_Raw            "Raw attributes [%s]"   { channel="traccar:device:gpsserver:car:raw-attributes" }
 ```
@@ -103,7 +103,7 @@ Thing device car "Car" [ deviceId=4, deviceFamily="fmx6", canAdapter="lvcan", ge
 ```
 
 ```
-Number:Dimensionless Car_SoC      "Battery [%.0f %%]"           { channel="traccar:device:gpsserver:car:can#batteryLevel" }
+Number:Dimensionless Car_SoC      "Battery [%.0f %%]"           { channel="traccar:device:gpsserver:car:can#batteryLevel", unit="%" }
 DateTime             Car_SoC_Seen "Battery read [%1$tH:%1$tM]"  { channel="traccar:device:gpsserver:car:can#batteryLevelSeen" }
 Number:Length        Car_Range    "Range [%.0f km]"             { channel="traccar:device:gpsserver:car:can#range", unit="km" }
 Switch               Car_Locked   "Locked [%s]"                 { channel="traccar:device:gpsserver:car:can#locked" }

@@ -168,7 +168,7 @@ Number:Temperature Beacon1_Temperature "Beacon 1 Temp [%.1f °C]" <temperature> 
     {channel="traccar:device:gpsserver:motorcycle:beacon1-temperature"}
 
 Number:Dimensionless Beacon1_Humidity "Beacon 1 Humidity [%.0f %%]" <humidity> (gBeacons)
-    {channel="traccar:device:gpsserver:motorcycle:beacon1-humidity"}
+    {channel="traccar:device:gpsserver:motorcycle:beacon1-humidity", unit="%" }
 
 // ----------------------------------------------------------------------------
 // BEACON 2 - Secondary Cargo (e.g., side bags)
@@ -196,7 +196,7 @@ Number:Temperature Beacon2_Temperature "Beacon 2 Temp [%.1f °C]" <temperature> 
     {channel="traccar:device:gpsserver:motorcycle:beacon2-temperature"}
 
 Number:Dimensionless Beacon2_Humidity "Beacon 2 Humidity [%.0f %%]" <humidity> (gBeacons)
-    {channel="traccar:device:gpsserver:motorcycle:beacon2-humidity"}
+    {channel="traccar:device:gpsserver:motorcycle:beacon2-humidity", unit="%" }
 
 // ----------------------------------------------------------------------------
 // BEACON 3 - Tertiary Cargo (e.g., RearBag Bag)

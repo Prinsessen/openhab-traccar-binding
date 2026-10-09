@@ -179,7 +179,7 @@ channel is not filled.
 |---------|------|-------------|---------------|
 | `status` | String | Device status | online/offline/unknown |
 | `lastUpdate` | DateTime | Timestamp of last update | 2026-01-18T09:23:10 |
-| `batteryLevel` | Number:Dimensionless | Battery level (0-100%) | 85% |
+| `batteryLevel` | Number:Dimensionless | Battery level (0-100%). Give the item `unit="%"`: without it openHAB stores 85 % as 0.85 | 85% |
 | `motion` | Switch | Movement detection (ON=moving) | ON |
 | `activity` | String | Activity recognition (OSMand only) | walking/in_vehicle/still |
 | `protocol` | String | Device protocol/connection type | teltonika/osmand |
@@ -321,7 +321,7 @@ Thing traccar:device:myserver:car "Car" (traccar:server:myserver) [
 ```
 
 ```openhab
-Number:Dimensionless Car_Battery      "Battery [%.0f %%]"   { channel="traccar:device:myserver:car:can#batteryLevel" }
+Number:Dimensionless Car_Battery      "Battery [%.0f %%]"   { channel="traccar:device:myserver:car:can#batteryLevel", unit="%" }
 DateTime             Car_Battery_Seen "Battery read [%1$tH:%1$tM]" { channel="traccar:device:myserver:car:can#batteryLevelSeen" }
 Number:Length        Car_Range        "Range [%.0f km]"     { channel="traccar:device:myserver:car:can#range", unit="km" }
 Switch               Car_Cable        "Cable in [%s]"       { channel="traccar:device:myserver:car:can#chargeCable" }
@@ -511,7 +511,7 @@ Switch Beacon1_LowBattery "Beacon 1 Low Battery" <lowbattery> (gBeacons)
 Number:Temperature Beacon1_Temperature "Beacon 1 Temperature [%.1f °C]" <temperature> (gBeacons)
     {channel="traccar:device:gpsserver:motorcycle:beacon1-temperature"}
 Number:Dimensionless Beacon1_Humidity "Beacon 1 Humidity [%.0f %%]" <humidity> (gBeacons)
-    {channel="traccar:device:gpsserver:motorcycle:beacon1-humidity"}
+    {channel="traccar:device:gpsserver:motorcycle:beacon1-humidity", unit="%" }
 
 // Beacon 2 - Side bags
 String Beacon2_Mac "Beacon 2 MAC [%s]" (gBeacons)
@@ -846,7 +846,7 @@ DateTime FamilyCar_LastUpdate "Last Update [%1$tF %1$tR]" (gFamilyCar)
     {channel="traccar:device:myserver:car1:lastUpdate"}
 
 Number:Dimensionless FamilyCar_Battery "Battery [%.0f %%]" (gFamilyCar) 
-    {channel="traccar:device:myserver:car1:batteryLevel"}
+    {channel="traccar:device:myserver:car1:batteryLevel", unit="%" }
 
 Switch FamilyCar_Motion "Motion" (gFamilyCar) 
     {channel="traccar:device:myserver:car1:motion"}
@@ -872,7 +872,7 @@ Number FamilyCar_GpsSatellites "GPS Satellites [%d]" (gFamilyCar)
     {channel="traccar:device:myserver:car1:gpsSatellites"}
 
 Number:Dimensionless FamilyCar_GsmSignal "GSM Signal [%.0f %%]" (gFamilyCar) 
-    {channel="traccar:device:myserver:car1:gsmSignal"}
+    {channel="traccar:device:myserver:car1:gsmSignal", unit="%" }
 
 // Geofencing
 String FamilyCar_GeofenceEvent "Event [%s]" (gFamilyCar) 
