@@ -280,7 +280,7 @@ Teltonika Configurator; enable them. All Switch unless noted.
 | `can#workMode` (String) | `private` / `company` | tested |
 | `can#chargeCable` | | tested |
 | `can#charging` | The car's own charging bit. On the tested car it went OFF at 98 % while the charger still delivered 8 kW, and came back with 100 %: it marks the main phase, not "current is flowing" | tested |
-| `can#electricMotor`, `can#closedByRemote`, `can#locked` | | tested |
+| `can#electricMotor` (Motor under power), `can#closedByRemote`, `can#locked` | `electricMotor` is Teltonika's "electric engine working": the motor delivering drive, which on a bZ4X follows the accelerator (ON under power, OFF coasting or standing) - not "the car is on", that is `can#ready` | tested |
 | `can#gearPark`, `can#gearReverse`, `can#gearNeutral`, `can#gearDrive`, `can#gear` (String P/R/N/D/-) | A switched-off car sends no gear bit, and no speed or pedal either; see `gearParkWhenOff` | tested |
 | `can#adapterSleep` | P4 only | tested |
 | `can#sidelights`, `can#dippedBeam`, `can#fullBeam`, `can#rearFog` | | tested |

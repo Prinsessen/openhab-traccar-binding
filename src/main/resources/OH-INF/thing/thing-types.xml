@@ -362,7 +362,8 @@
 					still delivered power, and came back at 100 %: it marks the main charging phase.</description>
 			</channel>
 			<channel id="electricMotor" typeId="can-flag">
-				<label>Electric Motor Working</label>
+				<label>Motor Under Power</label>
+				<description>The motor is delivering drive right now. Teltonika calls the bit "electric engine working"; on a bZ4X it follows the accelerator: ON under power, OFF when coasting, braking or standing - also in READY</description>
 			</channel>
 			<channel id="closedByRemote" typeId="can-flag">
 				<label>Closed with Original Remote</label>

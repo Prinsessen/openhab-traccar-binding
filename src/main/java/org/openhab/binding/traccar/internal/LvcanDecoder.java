@@ -135,7 +135,7 @@ public class LvcanDecoder {
             new Flag("hazardSwitch", Table.SECURITY, 21), //
             new Flag("chargeCable", Table.SECURITY, 28), //
             new Flag("charging", Table.SECURITY, 29), //
-            new Flag("electricMotor", Table.SECURITY, 30), //
+            new Flag("electricMotor", Table.SECURITY, 30), // "electric engine working": drive delivered now, follows the pedal on a bZ4X
             new Flag("closedByRemote", Table.SECURITY, 31), //
             new Flag("locked", Table.SECURITY, 32), //
             new Flag("remoteClose", Table.SECURITY, 35), //
