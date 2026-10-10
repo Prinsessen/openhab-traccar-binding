@@ -26,6 +26,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   EXAMPLES.md.
 
 ### Fixed
+- **Webhooks are answered at once and handled in order.** A webhook was answered
+  only when its handling - including a Nominatim lookup, rate-limited to one a
+  second - was done, so a batch of buffered positions made Traccar give up
+  ("forwarding failed - Read timed out", thousands a day on the author's
+  server): positions were retried, events such as geofence enter/exit were lost.
+  And parallel requests let a geofenceExit and a geofenceEnter one second apart be
+  applied in the wrong order - a vehicle at home read "exited". Now each webhook
+  is answered immediately and queued for one worker thread; a full queue answers
+  503 so Traccar retries.
+- **An older geofence event no longer overrides a newer one** (by the event's own
+  time, per device): Traccar sends each event as its own request.
 - **A thing that lost its channels gets them back.** When the binding's JAR is
   replaced, openHAB can rebuild a thing from a `.things` file before the
   binding's channel types are registered, and the thing comes back with no

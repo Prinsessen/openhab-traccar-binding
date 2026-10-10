@@ -88,6 +88,13 @@ public class TraccarDeviceHandler extends BaseThingHandler {
      */
     private final Object recordLock = new Object();
 
+    /**
+     * Event time of the newest geofence event applied. Traccar forwards each event as its own HTTP
+     * request, so two events a second apart (a geofenceExit and a geofenceEnter as the GPS crosses
+     * the fence) can arrive in either order; the older one must not win.
+     */
+    private @Nullable ZonedDateTime newestGeofenceEvent;
+
     /** A device clock this far ahead of Traccar's server clock is not trusted to move the bar. */
     private static final long MAX_CLOCK_AHEAD_MINUTES = 10;
 
@@ -1023,6 +1030,19 @@ public class TraccarDeviceHandler extends BaseThingHandler {
 
         @SuppressWarnings("unchecked")
         Map<String, Object> event = (Map<String, Object>) eventObj;
+
+        ZonedDateTime eventTime = parseTime(event.get("eventTime"));
+        synchronized (recordLock) {
+            ZonedDateTime newest = newestGeofenceEvent;
+            if (eventTime != null && newest != null && eventTime.isBefore(newest)) {
+                logger.debug("Device {}: geofence event from {} is older than the newest applied ({}), skipped",
+                        profile().deviceId, eventTime, newest);
+                return;
+            }
+            if (eventTime != null) {
+                newestGeofenceEvent = eventTime;
+            }
+        }
 
         // Handle geofence entry/exit events from webhook
         Object eventTypeObj = event.get("type");
