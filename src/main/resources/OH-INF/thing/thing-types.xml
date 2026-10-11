@@ -137,6 +137,8 @@
 			<channel id="activity" typeId="activity"/>
 			<channel id="protocol" typeId="protocol"/>
 			<channel id="ignition" typeId="ignition"/>
+			<channel id="alarm" typeId="alarm"/>
+			<channel id="alarmTime" typeId="alarm-time"/>
 			<!-- OBD-II Channels (Teltonika FMM920 with Bluetooth OBD-II dongle) -->
 			<channel id="obdDtcCount" typeId="obd-dtc-count"/>
 			<channel id="obdEngineLoad" typeId="obd-engine-load"/>
@@ -703,6 +705,20 @@
 		<label>Engine Hours</label>
 		<description>Total engine running hours</description>
 		<state readOnly="true" pattern="%.1f h"/>
+	</channel-type>
+
+	<channel-type id="alarm">
+		<item-type>String</item-type>
+		<label>Alarm</label>
+		<description>The last alarm the tracker raised, as Traccar names it: tow, powerCut (unplug), jamming, accident (crash), hardAcceleration / hardBraking / hardCornering (eco driving), overspeed, idle, sos, lowBattery ... several at once comma-separated. It stays until the next alarm; Alarm Time says when. Trigger rules on Alarm Time, which changes on every alarm record, and read the alarm from this channel</description>
+		<state readOnly="true"/>
+	</channel-type>
+
+	<channel-type id="alarm-time">
+		<item-type>DateTime</item-type>
+		<label>Alarm Time</label>
+		<description>Device time of the record that carried the last alarm. Changes on every alarm record, also when the alarm text is the same as before</description>
+		<state readOnly="true"/>
 	</channel-type>
 
 	<channel-type id="event">

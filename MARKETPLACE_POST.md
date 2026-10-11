@@ -9,6 +9,7 @@ Traccar itself speaks over 200 GPS protocols and supports more than 2000 devices
 - **CAN adapter support** -- a car with a Teltonika ALL-CAN300 or LV-CAN200 on an FMx6 tracker (FMC650 and relatives) reports its own battery level, range, odometer, speed, doors, locks, gear, lights and warning lamps. Switched on per device with `canAdapter=lvcan`; every other device keeps exactly the channels it had. Tested on a Toyota bZ4X, and the README marks every channel tested or untested.
 - **Records out of order no longer move a device backwards** -- for every device, not only cars: Teltonika trackers upload their buffer after a cold boot, and one webhook batch arrives on parallel threads.
 - **A thing that lost its channels gets them back** -- replacing the JAR could rebuild a `.things` thing before the channel types existed.
+- **Alarms** -- new `alarm` and `alarmTime` channels on every device carry what the tracker raises itself: towing, unplug, jamming, crash, eco driving (hard acceleration / braking / cornering), overspeed, idle. Trigger on the time, read the text.
 - **Device profiles** -- `deviceFamily`, `canAdapter`, `obdDongle`: the same Teltonika AVL id means different things on different hardware, so a thing says what it is. The defaults decode exactly as 1.1.x did.
 
 ## Features
@@ -93,6 +94,24 @@ rules.JSRule({
   name: 'Car arrived',
   triggers: [triggers.ItemStateChangeTrigger('Car_Geofence_Event', undefined, 'geofenceEnter')],
   execute: () => { /* open the gate, start the charger, turn on the lights */ }
+});
+```
+
+### An alarm from the tracker
+
+```
+String   Car_Alarm      "Alarm [%s]"  { channel="traccar:device:gpsserver:car:alarm" }
+DateTime Car_Alarm_Time "Alarm at"    { channel="traccar:device:gpsserver:car:alarmTime" }
+```
+
+```javascript
+rules.JSRule({
+  name: 'Tracker alarm',
+  triggers: [triggers.ItemStateChangeTrigger('Car_Alarm_Time')],   // every alarm record, not only a new text
+  execute: () => {
+    const alarm = items.getItem('Car_Alarm').state;               // tow, powerCut, jamming, accident, hardBraking ...
+    if (alarm.indexOf('tow') >= 0 || alarm.indexOf('accident') >= 0) { /* call, SMS, lights */ }
+  }
 });
 ```
 

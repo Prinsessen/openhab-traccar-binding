@@ -71,6 +71,15 @@ public class LvcanDecoderTest {
     }
 
     @Test
+    public void batteryLevelZeroIsNoReading() {
+        Map<String, State> s = decode("io142", 0.0, "io30", 0.0);
+        assertNull(s.get("batteryLevel"), "0 % is the adapter reading a sleeping bus, not the battery");
+        assertNull(s.get("batteryLevelSeen"));
+        assertEquals(new QuantityType<>(0.0, SIUnits.KILOMETRE_PER_HOUR), s.get("speed"), "0 km/h is real");
+        assertEquals(new QuantityType<>(1.0, Units.PERCENT), decode("io142", 1.0).get("batteryLevel"));
+    }
+
+    @Test
     public void doorBits() {
         Map<String, State> s = decode("io143", (double) (0x0100 | 0x2000));
         assertEquals(OpenClosedType.OPEN, s.get("doorFrontLeft"));

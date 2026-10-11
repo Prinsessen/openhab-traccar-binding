@@ -189,6 +189,8 @@ channel is not filled.
 | Channel | Type | Description | Example State |
 |---------|------|-------------|---------------|
 | `ignition` | Switch | Ignition status (ON=ignition on, OFF=off) | ON |
+| `alarm` | String | The last alarm the tracker raised, as Traccar names it: `tow`, `powerCut` (unplug), `jamming`, `accident` (crash), `hardAcceleration` / `hardBraking` / `hardCornering` (eco driving), `overspeed`, `idle`, `sos`, `lowBattery` ... several at once comma-separated. Stays until the next alarm | tow |
+| `alarmTime` | DateTime | Device time of the record that carried the last alarm. Changes on **every** alarm record, also when the text is the same - trigger rules on this and read `alarm` | 2026-10-11T07:40:12+02:00 |
 | `hours` | Number:Time | Total engine running hours | 239.2 h |
 | `event` | Number | Device-specific event code | 10831 |
 

@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **`alarm` and `alarmTime` channels** on every device: Traccar's `alarm`
+  attribute, which carries whatever scenario the tracker raised itself (on a
+  Teltonika: towing `tow`, unplug `powerCut`, `jamming`, crash `accident`, eco
+  driving `hardAcceleration` / `hardBraking` / `hardCornering`, `overspeed`,
+  `idle`, ...). The alarm stays on its channel; `alarmTime` takes the record's
+  device time and changes on every alarm record, so a rule triggers on it and
+  reads the text. Existing things get the two channels on the next start.
 - **Teltonika CAN adapter support** (ALL-CAN300 / LV-CAN200 on an FMx6 tracker
   such as the FMC650): with the new device parameter `canAdapter=lvcan` the
   thing gets a `can` channel group - traction battery level, range, odometer,
@@ -26,6 +33,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   EXAMPLES.md.
 
 ### Fixed
+- **An LVCAN battery level of 0 is not applied.** The adapter reports 0 while
+  the car's bus is asleep and the tracker's ignition is still on, and the
+  tracker's averaging filter then walks the value down (a bZ4X at 98 % read
+  33 %). Nothing awake reports exactly 0 %; the channel keeps its last reading.
 - **Webhooks are answered at once and handled in order.** A webhook was answered
   only when its handling - including a Nominatim lookup, rate-limited to one a
   second - was done, so a batch of buffered positions made Traccar give up

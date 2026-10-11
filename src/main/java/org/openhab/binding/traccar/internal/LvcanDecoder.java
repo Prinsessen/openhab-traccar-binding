@@ -258,6 +258,13 @@ public class LvcanDecoder {
             if (v.kind() == Kind.PERCENT && (raw < 0 || raw > 100)) {
                 continue; // not a percentage - leave the channel as it was
             }
+            if (v.channel().equals(BATTERY_LEVEL) && raw == 0) {
+                // 0 is what the adapter reports while the car's bus is asleep but the tracker's ignition
+                // is still on, not an empty battery: a bZ4X standing switched off showed its HV battery
+                // "fall" to 33 % through the tracker's averaging filter (2026-10-10). Nothing that moves
+                // under its own power reports exactly 0 % while awake.
+                continue;
+            }
             Unit<?> unit = switch (v.kind()) {
                 case PERCENT -> Units.PERCENT;
                 case METRES -> SIUnits.METRE;

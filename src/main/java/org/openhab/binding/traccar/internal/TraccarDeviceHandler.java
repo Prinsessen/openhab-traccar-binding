@@ -568,6 +568,22 @@ public class TraccarDeviceHandler extends BaseThingHandler {
                 updateState(CHANNEL_IGNITION, OnOffType.from((Boolean) ignitionObj));
             }
 
+            // Alarm: Traccar's one attribute for every scenario the tracker raises itself (Teltonika:
+            // towing -> tow, unplug -> powerCut, jamming, crash -> accident, eco driving ->
+            // hardAcceleration/hardBraking/hardCornering, overspeed, idle ...). Several at once come
+            // comma-separated. The alarm is left on the channel so the last one can be read; the record's
+            // device time goes to alarmTime, which changes on every alarm record and is what a rule
+            // triggers on - "changed" on the alarm text alone would miss a second tow a minute later.
+            // A record without an alarm leaves both as they are.
+            Object alarmObj = attributes.get("alarm");
+            if (alarmObj instanceof String alarm && !alarm.isBlank()) {
+                updateState(CHANNEL_ALARM, new StringType(alarm.trim()));
+                updateState(CHANNEL_ALARM_TIME,
+                        new DateTimeType(deviceTime != null ? deviceTime : ZonedDateTime.now()));
+                logger.info("Device {}: alarm {} ({})", profile().deviceId, alarm.trim(),
+                        deviceTime != null ? deviceTime : "no device time");
+            }
+
             // GPS Satellites
             Object satObj = attributes.get("sat");
             if (satObj instanceof Number) {

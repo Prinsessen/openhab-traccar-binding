@@ -76,6 +76,8 @@ public class TraccarBindingConstants {
     public static final String CHANNEL_OBD_FUEL_LEVEL = "obdFuelLevel";
     public static final String CHANNEL_OBD_OEM_ODOMETER = "obdOemOdometer";
     public static final String CHANNEL_IGNITION = "ignition";
+    public static final String CHANNEL_ALARM = "alarm";
+    public static final String CHANNEL_ALARM_TIME = "alarmTime";
 
     // Additional Teltonika/GPS Channels
     public static final String CHANNEL_PDOP = "pdop";
