@@ -78,6 +78,12 @@ public class TraccarBindingConstants {
     public static final String CHANNEL_IGNITION = "ignition";
     public static final String CHANNEL_ALARM = "alarm";
     public static final String CHANNEL_ALARM_TIME = "alarmTime";
+    public static final String CHANNEL_COMMAND_SEND = "commandSend";
+    public static final String CHANNEL_COMMAND_STATUS = "commandStatus";
+    public static final String CHANNEL_COMMAND_RESULT = "commandResult";
+    public static final String CHANNEL_COMMAND_RESULT_TIME = "commandResultTime";
+    public static final String CHANNEL_LOW_VOLTAGE_LEVEL = "lowVoltageLevel";
+    public static final String CHANNEL_LOW_VOLTAGE_STATUS = "lowVoltageStatus";
 
     // Additional Teltonika/GPS Channels
     public static final String CHANNEL_PDOP = "pdop";

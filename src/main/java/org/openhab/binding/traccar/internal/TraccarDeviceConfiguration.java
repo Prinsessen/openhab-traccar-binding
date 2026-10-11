@@ -57,4 +57,23 @@ public class TraccarDeviceConfiguration {
     public boolean isFmx6() {
         return FAMILY_FMX6.equals(deviceFamily);
     }
+
+    /**
+     * Regular expression a command text must match before the binding sends it ({@code commandSend}
+     * channel). Empty = nothing is sent. The low-voltage channel is not subject to it.
+     */
+    public String allowedCommands = "";
+
+    /** Seconds the binding keeps asking Traccar for the tracker's reply after a command. 0 = never asks. */
+    public int commandResultTimeout = 300;
+
+    /**
+     * The tracker's normal Low Voltage Level (parameter 105) in mV, for the safety net of the
+     * {@code lowVoltageLevel} channel: a lowered level that has stood for lowVoltageRestoreHours is put
+     * back to this. 0 = no safety net.
+     */
+    public int lowVoltageLevelNormal = 0;
+
+    /** Hours a lowered Low Voltage Level may stand before the binding restores it. */
+    public int lowVoltageRestoreHours = 14;
 }

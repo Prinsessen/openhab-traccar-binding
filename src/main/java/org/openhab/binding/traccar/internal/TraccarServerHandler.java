@@ -229,6 +229,10 @@ public class TraccarServerHandler extends BaseBridgeHandler {
                             if ("geofenceEnter".equals(eventType) || "geofenceExit".equals(eventType)) {
                                 logger.debug("Processing geofence event: {}", eventType);
                                 deviceHandler.handleGeofenceEvent(eventData);
+                            } else if ("commandResult".equals(eventType)) {
+                                // the tracker's reply to a command - the webhook is the fast path, the
+                                // device handler's poll the fallback
+                                deviceHandler.handleCommandResult(eventData);
                             }
                         }
                     }

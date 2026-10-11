@@ -139,6 +139,12 @@
 			<channel id="ignition" typeId="ignition"/>
 			<channel id="alarm" typeId="alarm"/>
 			<channel id="alarmTime" typeId="alarm-time"/>
+			<channel id="commandSend" typeId="command-send"/>
+			<channel id="commandStatus" typeId="command-status"/>
+			<channel id="commandResult" typeId="command-result"/>
+			<channel id="commandResultTime" typeId="command-result-time"/>
+			<channel id="lowVoltageLevel" typeId="low-voltage-level"/>
+			<channel id="lowVoltageStatus" typeId="low-voltage-status"/>
 			<!-- OBD-II Channels (Teltonika FMM920 with Bluetooth OBD-II dongle) -->
 			<channel id="obdDtcCount" typeId="obd-dtc-count"/>
 			<channel id="obdEngineLoad" typeId="obd-engine-load"/>
@@ -286,6 +292,38 @@
 					last values before switch-off would otherwise stand for the whole stop). Right for cars that
 					engage P themselves (most electric cars and automatics), wrong for a manual gearbox.</description>
 				<default>false</default>
+				<advanced>true</advanced>
+			</parameter>
+			<parameter name="allowedCommands" type="text">
+				<label>Allowed Commands</label>
+				<description>A regular expression a command text must match before the binding sends it to the
+					tracker through the Command channel; anything else is refused and said so in Command Status. Empty
+					= nothing is sent (the default). Example for a Teltonika:
+					^(getparam|getver|getstatus|lvcangetinfo)\b|^setparam (100|101|105|1000):\d+$
+					The Low Voltage Level channel is not subject to it.</description>
+				<default></default>
+				<advanced>true</advanced>
+			</parameter>
+			<parameter name="commandResultTimeout" type="integer" min="0" max="3600" unit="s">
+				<label>Command Result Timeout</label>
+				<description>How long the binding keeps asking Traccar for the tracker's reply after a command
+					(seconds). Replies also arrive through the webhook when Traccar forwards events. 0 = never asks.</description>
+				<default>300</default>
+				<advanced>true</advanced>
+			</parameter>
+			<parameter name="lowVoltageLevelNormal" type="integer" min="0" max="60000">
+				<label>Low Voltage Level, normal (mV)</label>
+				<description>The tracker's normal Low Voltage Level (Teltonika parameter 105, mV) - the ignition threshold
+					when the supply is the source. The Low Voltage Level channel lowers it for a charge and this is what
+					the safety net puts back after Low Voltage Restore Hours. 0 = no safety net.</description>
+				<default>0</default>
+				<advanced>true</advanced>
+			</parameter>
+			<parameter name="lowVoltageRestoreHours" type="integer" min="1" max="168" unit="h">
+				<label>Low Voltage Restore Hours</label>
+				<description>Hours a lowered Low Voltage Level may stand before the binding puts the normal level
+					back by itself - a tracker left lowered never sleeps.</description>
+				<default>14</default>
 				<advanced>true</advanced>
 			</parameter>
 		</config-description>
@@ -718,6 +756,59 @@
 		<item-type>DateTime</item-type>
 		<label>Alarm Time</label>
 		<description>Device time of the record that carried the last alarm. Changes on every alarm record, also when the alarm text is the same as before</description>
+		<state readOnly="true"/>
+	</channel-type>
+
+	<channel-type id="command-send">
+		<item-type>String</item-type>
+		<label>Command</label>
+		<description>Send a text command to the tracker through Traccar (a Teltonika: getparam 105, setparam 105:12300,
+			getver ...). It must match the thing's Allowed Commands expression. The state is the last command sent;
+			Command Status says whether Traccar delivered it (the tracker was connected) or queued it until the tracker
+			next connects, and Command Result carries the tracker's reply</description>
+	</channel-type>
+
+	<channel-type id="command-status">
+		<item-type>String</item-type>
+		<label>Command Status</label>
+		<description>What became of the last command: "delivered HH:mm:ss", "queued HH:mm:ss (tracker offline)",
+			"refused: not allowed", "failed: HTTP ..."</description>
+		<state readOnly="true"/>
+	</channel-type>
+
+	<channel-type id="command-result">
+		<item-type>String</item-type>
+		<label>Command Result</label>
+		<description>The tracker's last reply (Traccar's commandResult event): "New value 105:12300;",
+			"Param ID:105 Value:13700", "Param ID:53040 doesn't exist" ... Stays until the next reply; Command Result
+			Time changes with every reply</description>
+		<state readOnly="true"/>
+	</channel-type>
+
+	<channel-type id="command-result-time">
+		<item-type>DateTime</item-type>
+		<label>Command Result Time</label>
+		<description>When the tracker's last reply was received</description>
+		<state readOnly="true"/>
+	</channel-type>
+
+	<channel-type id="low-voltage-level">
+		<item-type>Number:ElectricPotential</item-type>
+		<label>Low Voltage Level</label>
+		<description>The tracker's Low Voltage Level (Teltonika parameter 105): with the supply voltage as ignition
+			source, ignition is ON above it. Send a voltage (12.3 V) to change it: the binding sends setparam 105 and
+			sets the state only from the tracker's confirmed reply, so the state is what the tracker runs with. An EV's
+			DC-DC holds the 12 V near the battery's resting level while charging; lower this for the charge and the
+			tracker stays awake and keeps sending CAN data; the safety net (Low Voltage Level, normal + Low Voltage
+			Restore Hours) puts the normal level back if a charge never ends</description>
+		<state pattern="%.2f %unit%"/>
+	</channel-type>
+
+	<channel-type id="low-voltage-status">
+		<item-type>String</item-type>
+		<label>Low Voltage Status</label>
+		<description>"12300 mV confirmed HH:mm", "12300 mV sent HH:mm, waiting for the tracker", "13700 mV restored
+			by the binding after 14 h" ...</description>
 		<state readOnly="true"/>
 	</channel-type>
 

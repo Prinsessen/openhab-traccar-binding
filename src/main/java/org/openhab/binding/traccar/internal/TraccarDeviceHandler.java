@@ -14,12 +14,17 @@ package org.openhab.binding.traccar.internal;
 
 import static org.openhab.binding.traccar.internal.TraccarBindingConstants.*;
 
+import java.time.Instant;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 import javax.measure.Unit;
 
@@ -36,6 +41,7 @@ import org.openhab.core.library.unit.ImperialUnits;
 import org.openhab.core.library.unit.MetricPrefix;
 import org.openhab.core.library.unit.SIUnits;
 import org.openhab.core.library.unit.Units;
+import org.openhab.core.library.unit.MetricPrefix;
 import org.openhab.core.thing.Bridge;
 import org.openhab.core.thing.Channel;
 import org.openhab.core.thing.ChannelGroupUID;
@@ -98,6 +104,29 @@ public class TraccarDeviceHandler extends BaseThingHandler {
     /** A device clock this far ahead of Traccar's server clock is not trusted to move the bar. */
     private static final long MAX_CLOCK_AHEAD_MINUTES = 10;
 
+    /**
+     * Traccar's id of the newest position applied. The same position reaches the binding twice when
+     * Traccar forwards both the position and an event that carries it (an alarm, a geofence event), and
+     * the API poll can hand over a position the webhook already delivered.
+     */
+    private long lastPositionId = -1;
+
+    // ---- commands to the tracker (Command channel, Low Voltage Level channel) ----
+    private static final DateTimeFormatter HHMMSS = DateTimeFormatter.ofPattern("HH:mm:ss");
+    private static final int PARAM_LOW_VOLTAGE_LEVEL = 105;
+    private static final long RESULT_POLL_SECONDS = 20;
+    private static final long SAFETY_NET_CHECK_MINUTES = 10;
+    private @Nullable ScheduledFuture<?> resultPoll;
+    private @Nullable ScheduledFuture<?> safetyNet;
+    private @Nullable Instant commandSentAt;
+    private @Nullable Instant lastResultAt;
+    /** The Low Voltage Level the tracker last confirmed (mV), or -1 before the first reply. */
+    private long lowVoltageConfirmedMv = -1;
+    /** When a level below the normal one was confirmed; null while at the normal level or unknown. */
+    private @Nullable Instant lowVoltageLoweredSince;
+    /** The level (mV) last sent through the channel and not yet confirmed, or -1. */
+    private long lowVoltagePendingMv = -1;
+
     private final ThingTypeRegistry thingTypeRegistry;
 
     public TraccarDeviceHandler(Thing thing, ThingTypeRegistry thingTypeRegistry) {
@@ -109,7 +138,239 @@ public class TraccarDeviceHandler extends BaseThingHandler {
     public void handleCommand(ChannelUID channelUID, Command command) {
         if (command instanceof RefreshType) {
             updatePosition();
+            return;
         }
+        String channel = channelUID.getId();
+        if (CHANNEL_COMMAND_SEND.equals(channel)) {
+            String text = command.toString().trim();
+            if (!CommandSupport.isAllowed(profile().allowedCommands, text)) {
+                updateState(CHANNEL_COMMAND_STATUS, new StringType("refused: not in allowedCommands - " + text));
+                logger.warn("Device {}: command refused, not in allowedCommands: {}", profile().deviceId, text);
+                return;
+            }
+            sendCommandToTracker(text, false);
+        } else if (CHANNEL_LOW_VOLTAGE_LEVEL.equals(channel)) {
+            long mv = toMillivolts(command);
+            if (mv <= 0) {
+                logger.warn("Device {}: Low Voltage Level command not understood: {}", profile().deviceId, command);
+                return;
+            }
+            updateState(CHANNEL_LOW_VOLTAGE_STATUS, new StringType(mv + " mV sent " + now() + ", waiting for the tracker"));
+            lowVoltagePendingMv = mv;
+            sendCommandToTracker("setparam " + PARAM_LOW_VOLTAGE_LEVEL + ":" + mv, true);
+        }
+    }
+
+    /** A voltage command as mV: QuantityType in any electric-potential unit, or a plain number (mV above 100, else V). */
+    private static long toMillivolts(Command command) {
+        if (command instanceof QuantityType<?> q) {
+            QuantityType<?> v = q.toUnit(Units.VOLT);
+            return v != null ? Math.round(v.doubleValue() * 1000.0) : -1;
+        }
+        if (command instanceof DecimalType d) {
+            double n = d.doubleValue();
+            return Math.round(n > 100 ? n : n * 1000.0);
+        }
+        try {
+            double n = Double.parseDouble(command.toString().replace("V", "").trim());
+            return Math.round(n > 100 ? n : n * 1000.0);
+        } catch (NumberFormatException e) {
+            return -1;
+        }
+    }
+
+    private String now() {
+        return ZonedDateTime.now().format(HHMMSS);
+    }
+
+    /**
+     * Sends a text command through Traccar and starts asking for the reply. Replies also come through
+     * the webhook (handleCommandResult) when Traccar forwards events; the poll is the fallback and stops
+     * at the first reply newer than the command, or after commandResultTimeout.
+     */
+    private synchronized void sendCommandToTracker(String text, boolean lowVoltage) {
+        TraccarApiClient api = apiClient();
+        if (api == null) {
+            updateState(CHANNEL_COMMAND_STATUS, new StringType("failed: no connection to Traccar"));
+            return;
+        }
+        int status = api.sendCustomCommand(profile().deviceId, text);
+        String when = now();
+        String result = status == 200 ? "delivered " + when
+                : status == 202 ? "queued " + when + " (tracker offline, Traccar delivers when it connects)"
+                        : "failed: HTTP " + status + " " + when;
+        updateState(CHANNEL_COMMAND_SEND, new StringType(text));
+        updateState(CHANNEL_COMMAND_STATUS, new StringType(result));
+        logger.info("Device {}: command \"{}\" {}", profile().deviceId, text, result);
+        if (status != 200 && status != 202) {
+            if (lowVoltage) {
+                updateState(CHANNEL_LOW_VOLTAGE_STATUS, new StringType("send failed " + when + " (HTTP " + status + ")"));
+            }
+            return;
+        }
+        commandSentAt = Instant.now();
+        startResultPoll();
+    }
+
+    private @Nullable TraccarApiClient apiClient() {
+        Bridge bridge = getBridge();
+        if (bridge != null && bridge.getHandler() instanceof TraccarServerHandler serverHandler) {
+            return serverHandler.getApiClient();
+        }
+        return null;
+    }
+
+    private void startResultPoll() {
+        int timeout = profile().commandResultTimeout;
+        ScheduledFuture<?> running = resultPoll;
+        if (running != null) {
+            running.cancel(false);
+        }
+        if (timeout <= 0) {
+            return;
+        }
+        Instant deadline = Instant.now().plusSeconds(timeout);
+        resultPoll = scheduler.scheduleWithFixedDelay(() -> {
+            try {
+                if (pollCommandResult() || Instant.now().isAfter(deadline)) {
+                    ScheduledFuture<?> me = resultPoll;
+                    if (me != null) {
+                        me.cancel(false);
+                    }
+                    resultPoll = null;
+                }
+            } catch (Exception e) {
+                logger.debug("Device {}: result poll failed: {}", profile().deviceId, e.getMessage());
+            }
+        }, RESULT_POLL_SECONDS, RESULT_POLL_SECONDS, TimeUnit.SECONDS);
+    }
+
+    /** Asks Traccar for replies since the command was sent; true once one newer than the command is applied. */
+    private boolean pollCommandResult() {
+        TraccarApiClient api = apiClient();
+        Instant sent = commandSentAt;
+        if (api == null || sent == null) {
+            return true;
+        }
+        boolean applied = false;
+        for (Map<String, Object> event : api.getCommandResults(profile().deviceId, sent.minusSeconds(5))) {
+            if (applyCommandResult(event)) {
+                applied = true;
+            }
+        }
+        return applied;
+    }
+
+    /** A Traccar commandResult event, from the webhook (event forwarding) or the poll. */
+    public void handleCommandResult(Map<String, Object> eventData) {
+        Object eventObj = eventData.get("event");
+        if (eventObj instanceof Map<?, ?>) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> event = (Map<String, Object>) eventObj;
+            applyCommandResult(event);
+        }
+    }
+
+    /**
+     * Applies one commandResult event: the result channels, and the Low Voltage Level when the reply
+     * confirms parameter 105. Returns true when the event is newer than the last one applied.
+     */
+    private synchronized boolean applyCommandResult(Map<String, Object> event) {
+        Object attributesObj = event.get("attributes");
+        String text = "";
+        if (attributesObj instanceof Map<?, ?> attributes) {
+            Object result = attributes.get("result");
+            text = result != null ? result.toString().trim() : "";
+        }
+        ZonedDateTime at = parseTime(event.get("eventTime"));
+        if (at == null) {
+            at = parseTime(event.get("serverTime"));
+        }
+        Instant when = at != null ? at.toInstant() : Instant.now();
+        Instant last = lastResultAt;
+        if (last != null && !when.isAfter(last)) {
+            return false;
+        }
+        Instant sent = commandSentAt;
+        if (sent != null && when.isBefore(sent.minusSeconds(5))) {
+            return false; // an old reply the poll window still shows
+        }
+        lastResultAt = when;
+        updateState(CHANNEL_COMMAND_RESULT, new StringType(text));
+        updateState(CHANNEL_COMMAND_RESULT_TIME, new DateTimeType(when.atZone(ZoneId.systemDefault())));
+        logger.info("Device {}: tracker replied \"{}\"", profile().deviceId, text);
+        Long mv = CommandSupport.parseParameterReply(text).get(PARAM_LOW_VOLTAGE_LEVEL);
+        if (mv != null) {
+            confirmLowVoltage(mv, when);
+        } else if (lowVoltagePendingMv > 0 && text.startsWith("Config same")) {
+            // a Teltonika answers "Config same for all parameters" to a setparam that changes nothing -
+            // the tracker runs with the value sent, so it counts as confirmed
+            confirmLowVoltage(lowVoltagePendingMv, when);
+        }
+        return true;
+    }
+
+    private void confirmLowVoltage(long mv, Instant when) {
+        lowVoltageConfirmedMv = mv;
+        lowVoltagePendingMv = -1;
+        updateState(CHANNEL_LOW_VOLTAGE_LEVEL, new QuantityType<>(mv, MetricPrefix.MILLI(Units.VOLT)));
+        int normal = profile().lowVoltageLevelNormal;
+        if (normal > 0 && mv < normal) {
+            if (lowVoltageLoweredSince == null) {
+                lowVoltageLoweredSince = when;
+            }
+        } else {
+            lowVoltageLoweredSince = null;
+        }
+        updateState(CHANNEL_LOW_VOLTAGE_STATUS,
+                new StringType(mv + " mV confirmed " + when.atZone(ZoneId.systemDefault()).format(HHMMSS)));
+    }
+
+    /**
+     * The safety net: a Low Voltage Level below the normal one that has stood for lowVoltageRestoreHours
+     * is put back, because a tracker that never sees its ignition go off never sleeps.
+     */
+    private void startSafetyNet() {
+        ScheduledFuture<?> running = safetyNet;
+        if (running != null) {
+            running.cancel(false);
+        }
+        if (profile().lowVoltageLevelNormal <= 0) {
+            return;
+        }
+        safetyNet = scheduler.scheduleWithFixedDelay(() -> {
+            try {
+                Instant since = lowVoltageLoweredSince;
+                int normal = profile().lowVoltageLevelNormal;
+                if (since != null && normal > 0
+                        && Instant.now().isAfter(since.plusSeconds(profile().lowVoltageRestoreHours * 3600L))) {
+                    logger.warn("Device {}: Low Voltage Level {} mV has stood for {} h - restoring {} mV",
+                            profile().deviceId, lowVoltageConfirmedMv, profile().lowVoltageRestoreHours, normal);
+                    updateState(CHANNEL_LOW_VOLTAGE_STATUS, new StringType(normal + " mV restored by the binding "
+                            + now() + " after " + profile().lowVoltageRestoreHours + " h lowered, waiting for the tracker"));
+                    lowVoltageLoweredSince = null; // one attempt per lowering; the reply sets it again if still low
+                    lowVoltagePendingMv = normal;
+                    sendCommandToTracker("setparam " + PARAM_LOW_VOLTAGE_LEVEL + ":" + normal, true);
+                }
+            } catch (Exception e) {
+                logger.debug("Device {}: safety net failed: {}", profile().deviceId, e.getMessage());
+            }
+        }, SAFETY_NET_CHECK_MINUTES, SAFETY_NET_CHECK_MINUTES, TimeUnit.MINUTES);
+    }
+
+    @Override
+    public void dispose() {
+        ScheduledFuture<?> f = resultPoll;
+        if (f != null) {
+            f.cancel(true);
+            resultPoll = null;
+        }
+        f = safetyNet;
+        if (f != null) {
+            f.cancel(true);
+            safetyNet = null;
+        }
+        super.dispose();
     }
 
     @Override
@@ -258,6 +519,7 @@ public class TraccarDeviceHandler extends BaseThingHandler {
 
             updateStatus(ThingStatus.ONLINE);
             updatePosition();
+            startSafetyNet();
         } else {
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.BRIDGE_OFFLINE);
         }
@@ -344,6 +606,14 @@ public class TraccarDeviceHandler extends BaseThingHandler {
     private void updatePositionChannels(Map<String, Object> position) {
         ZonedDateTime deviceTime = parseTime(position.get("deviceTime"));
         synchronized (recordLock) {
+            if (position.get("id") instanceof Number idNumber) {
+                long id = idNumber.longValue();
+                if (id > 0 && id == lastPositionId) {
+                    logger.debug("Device {}: position {} already applied, skipped", profile().deviceId, id);
+                    return;
+                }
+                lastPositionId = id;
+            }
             ZonedDateTime newest = newestRecord;
             if (deviceTime != null && newest != null && deviceTime.isBefore(newest)) {
                 logger.debug("Device {}: record from {} is older than the newest applied ({}), skipped",

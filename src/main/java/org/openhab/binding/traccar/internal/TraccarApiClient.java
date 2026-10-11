@@ -13,6 +13,8 @@
 package org.openhab.binding.traccar.internal;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +26,7 @@ import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.util.StringContentProvider;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.slf4j.Logger;
@@ -179,5 +182,54 @@ public class TraccarApiClient {
             logger.debug("Failed to get device {}: {}", deviceId, e.getMessage());
         }
         return null;
+    }
+    /**
+     * Sends a custom (text) command to a device through Traccar.
+     *
+     * @return the HTTP status: 200 = delivered to a connected tracker, 202 = queued by Traccar until the
+     *         tracker next connects, anything else = not sent (the body is logged at debug level)
+     */
+    public int sendCustomCommand(int deviceId, String data) {
+        try {
+            Map<String, Object> body = Map.of("deviceId", deviceId, "type", "custom", "attributes",
+                    Map.of("data", data));
+            ContentResponse response = httpClient.newRequest(baseUrl + "/api/commands/send").method(HttpMethod.POST)
+                    .header("Authorization", authHeader).header("Accept", "application/json")
+                    .content(new StringContentProvider(gson.toJson(body)), "application/json")
+                    .timeout(15, TimeUnit.SECONDS).send();
+            int status = response.getStatus();
+            if (status != HttpStatus.OK_200 && status != HttpStatus.ACCEPTED_202) {
+                logger.debug("Command to device {} not sent, status {}: {}", deviceId, status,
+                        response.getContentAsString());
+            }
+            return status;
+        } catch (InterruptedException | TimeoutException | ExecutionException e) {
+            logger.debug("Failed to send command to device {}: {}", deviceId, e.getMessage());
+            return -1;
+        }
+    }
+
+    /**
+     * The tracker's replies (Traccar {@code commandResult} events) for a device since a moment, oldest
+     * first, each as the event map Traccar returns (attributes.result holds the text, eventTime when).
+     */
+    public List<Map<String, Object>> getCommandResults(int deviceId, Instant since) {
+        try {
+            ContentResponse response = httpClient.newRequest(baseUrl + "/api/reports/events").method(HttpMethod.GET)
+                    .param("deviceId", String.valueOf(deviceId)).param("type", "commandResult")
+                    .param("from", since.toString()).param("to", Instant.now().plusSeconds(60).toString())
+                    .header("Authorization", authHeader).header("Accept", "application/json")
+                    .timeout(15, TimeUnit.SECONDS).send();
+            if (response.getStatus() == HttpStatus.OK_200) {
+                List<Map<String, Object>> events = gson.fromJson(response.getContentAsString(),
+                        new TypeToken<List<Map<String, Object>>>() {
+                        }.getType());
+                return events != null ? events : new ArrayList<>();
+            }
+            logger.debug("Command results for device {}: status {}", deviceId, response.getStatus());
+        } catch (InterruptedException | TimeoutException | ExecutionException e) {
+            logger.debug("Failed to read command results for device {}: {}", deviceId, e.getMessage());
+        }
+        return new ArrayList<>();
     }
 }
