@@ -33,6 +33,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   EXAMPLES.md.
 
 ### Fixed
+- **Reverse geocoding on a German/Danish/... JVM.** The Nominatim URL was built
+  with the JVM's default locale, so the coordinates came out as `lat=51,123456`
+  and Nominatim answered 400 "Parameter 'lon' must be a number": no address at
+  all on such systems. Reported by a user on 2026-10-11.
 - **An LVCAN battery level of 0 is not applied.** The adapter reports 0 while
   the car's bus is asleep and the tracker's ignition is still on, and the
   tracker's averaging filter then walks the value down (a bZ4X at 98 % read

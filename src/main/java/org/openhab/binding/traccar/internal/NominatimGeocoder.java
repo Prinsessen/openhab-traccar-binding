@@ -15,6 +15,7 @@ package org.openhab.binding.traccar.internal;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -115,7 +116,7 @@ public class NominatimGeocoder {
             String address = reverseGeocode(latitude, longitude);
             if (address != null) {
                 // Cache the result
-                String cacheKey = String.format("%.6f,%.6f", latitude, longitude);
+                String cacheKey = String.format(Locale.ROOT, "%.6f,%.6f", latitude, longitude);
                 addressCache.put(cacheKey, new CachedAddress(address, latitude, longitude));
                 logger.debug("Geocoded {},{} -> {}", latitude, longitude, address);
             }
@@ -159,7 +160,9 @@ public class NominatimGeocoder {
      * Make reverse geocoding request to Nominatim
      */
     private @Nullable String reverseGeocode(double latitude, double longitude) throws IOException {
-        String url = String.format(
+        // Locale.ROOT: with a German or Danish JVM locale %.6f prints "51,123456", and Nominatim answers
+        // 400 "Parameter 'lon' must be a number" - reported by a user on 2026-10-11
+        String url = String.format(Locale.ROOT,
                 "%s/reverse?format=json&lat=%.6f&lon=%.6f&accept-language=%s&zoom=18&addressdetails=1", serverUrl,
                 latitude, longitude, URLEncoder.encode(language, StandardCharsets.UTF_8));
 
