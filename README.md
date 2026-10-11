@@ -1700,27 +1700,49 @@ Not all channels are supported by every device protocol. Availability depends on
 ### Channel Details by Protocol
 
 #### Teltonika (Industrial GPS Trackers)
-**Example devices**: FMM920, FMB920, FMT100
+**Example devices**: FMM920, FMC920, FMB920, FMT100 (FMB family); FMC650 and relatives (FMx6 family)
 
 **Supported channels**:
 - All position/navigation channels (position, altitude, speed, course, accuracy, valid)
 - Distance tracking (odometer via `totalDistance`, distance)
-- Engine hours (hours in milliseconds)
-- GPS satellites (sat attribute)
-- Device events (event codes like 10828, 10829, 10831)
-- Protocol identification
+- Engine hours (hours in milliseconds), GPS satellites (sat), GSM signal (`rssi`, 0-5 scaled to %)
+- Ignition (`ignition`, from the tracker's own ignition source), motion
+- External supply `power` (the vehicle's 12 V) and the internal battery's `battery` voltage;
+  `batteryLevel` on the FMB family (AVL 113 - on the FMx6 family that id is Service Distance,
+  so set `deviceFamily="fmx6"` there)
+- Device events (event codes like 10828, 10829, 10831), protocol identification
+- **BLE beacons** (FMM920 with Teltonika EYE beacons: distance, RSSI, battery, temperature,
+  humidity, movement, pitch/roll - see `docs/beacon-quickstart.md`)
+- **CAN adapter** (`canAdapter="lvcan"` on an FMx6 tracker with an ALL-CAN300 / LV-CAN200:
+  battery level, range, odometer, speed, pedal, doors, gear, lights, locks, charging, warning
+  lamps - see `docs/can-adapter-example.md`)
+- **OBD-II** (`obdDongle="bluetooth"`: a Bluetooth OBD-II dongle on an FMM920, io30-io48)
+- **Alarms** (`alarm`, `alarmTime`): towing, unplug, jamming, crash, eco driving, overspeed, idle -
+  whatever scenario is enabled in the Configurator
+- **Commands** (`commandSend` / `commandStatus` / `commandResult`): `getparam`, `setparam`,
+  `getver`, `web_connect` ... through Traccar, with the tracker's reply; `lowVoltageLevel` for the
+  ignition threshold (parameter 105); eco-driving counters per trip
 
 **Not supported**:
-- Activity recognition (hardware limitation)
-- Battery level (wired devices)
-- GSM signal (not reported by most models)
+- Activity recognition (a phone feature)
+
+**Things to know**:
+- Codec 8 Extended on the tracker: plain Codec 8 has one-byte IO ids, and every CAN value and
+  most newer AVL ids are above 255
+- With a CAN adapter on the FMC650, COM1 mode LVCAN and baud rate "Default" (115200 reads the
+  car and the tracker never hears it); the P4 state-flag elements are off by default
+- The tracker sends no CAN values while its ignition is off (ignition sources are DIN, supply
+  voltage and movement - never CAN); an EV's 12 V drops below a driving threshold while charging,
+  hence `lowVoltageLevel`
+- A record older than the newest applied is dropped (a Teltonika uploads its buffer after a cold
+  boot); the same position forwarded twice (inside an alarm or geofence event) is applied once
 
 **Odometer notes**: 
 - Uses `totalDistance` attribute
 - Binding automatically falls back to this if `odometer` is not present
 - Reported in meters, auto-converted to km with `unit="km"` in item definition
 
-**Example webhook attributes**:
+**Example webhook attributes** (FMM920):
 ```json
 {
   "sat": 8,
@@ -1729,6 +1751,10 @@ Not all channels are supported by every device protocol. Availability depends on
   "totalDistance": 33279520.98,
   "motion": false,
   "hours": 861239290,
+  "ignition": false,
+  "power": 12.41,
+  "battery": 4.02,
+  "rssi": 4,
   "priority": 0
 }
 ```
