@@ -20,6 +20,9 @@ Complete working examples for the Traccar binding.
 9. [BLE Beacon Fall Detection (Advanced)](#ble-beacon-fall-detection-advanced)
 10. [Finding Out What a Device Actually Sends](#finding-out-what-a-device-actually-sends)
 11. [CAN Adapter (Car Data)](#can-adapter-car-data)
+12. [Tracker Alarms (1.2.0)](#tracker-alarms-120)
+13. [Commands to the Tracker (1.3.0)](#commands-to-the-tracker-130)
+14. [Eco Driving per Trip (1.3.0)](#eco-driving-per-trip-130)
 
 ---
 
@@ -1351,3 +1354,122 @@ sitemap, and JavaScript rules:
 - night check: locked, doors shut, lights off
 - warning lamps that stay lit after the start-up lamp test
 - the car's own speed with the tracker's GPS speed as fallback
+
+---
+
+## Tracker Alarms (1.2.0)
+
+Whatever the tracker raises by itself arrives on two channels: `alarm` (the text, as
+Traccar names it) and `alarmTime` (the device time of the record that carried it).
+On a Teltonika that is towing (`tow`), unplug (`powerCut`), `jamming`, crash
+(`accident`) and eco driving (`hardAcceleration`, `hardBraking`, `hardCornering`),
+once the scenarios are enabled in the Configurator. The text stays until the next
+alarm, so a rule triggers on the time, which changes on every alarm record.
+
+```openhab
+String   FamilyCar_Alarm      "Alarm [%s]"  (gFamilyCar) { channel="traccar:device:myserver:car1:alarm" }
+DateTime FamilyCar_Alarm_Time "Alarm at"    (gFamilyCar) { channel="traccar:device:myserver:car1:alarmTime" }
+```
+
+```javascript
+const { rules, triggers, items, actions } = require('openhab');
+
+rules.JSRule({
+  name: 'Car - theft or crash alarm',
+  triggers: [triggers.ItemStateChangeTrigger('FamilyCar_Alarm_Time')],
+  execute: () => {
+    const alarm = String(items.getItem('FamilyCar_Alarm').state);     // may hold several: "tow,jamming"
+    if (/tow|jamming|accident|powerCut/.test(alarm)) {
+      actions.NotificationAction.sendBroadcastNotification('Car: ' + alarm);
+      // call, flash the lights, open the camera ...
+    }
+  }
+});
+```
+
+An eco-driving event is a record of its own and arrives within the tracker's send
+period while moving (3-4 s on an FMC650 with a 10 s period). Towing and jamming
+come at High priority if you set them so - the tracker sends them at once.
+
+---
+
+## Commands to the Tracker (1.3.0)
+
+A text on `commandSend` goes to the tracker through Traccar as a custom command -
+*if* it matches the thing's `allowedCommands` expression. A tracker accepts anything,
+including a new server address, so the thing allows nothing until told. Traccar
+delivers the command at once to a connected tracker or queues it until the tracker
+next connects (a Teltonika in deep sleep wakes every send period); the tracker's
+reply lands on `commandResult`.
+
+```openhab
+Thing device car1 "Family Car" [ deviceId=2,
+    allowedCommands="^(getparam [0-9;]+|getver|getstatus|web_connect)$|^setparam (100|101|105|1000):[0-9]+$" ]
+```
+
+```openhab
+String   FamilyCar_Command        "Command [%s]"       (gFamilyCar) { channel="traccar:device:myserver:car1:commandSend" }
+String   FamilyCar_Command_Status "Status [%s]"        (gFamilyCar) { channel="traccar:device:myserver:car1:commandStatus" }
+String   FamilyCar_Command_Result "Tracker reply [%s]" (gFamilyCar) { channel="traccar:device:myserver:car1:commandResult" }
+DateTime FamilyCar_Command_Result_Time "Reply at"      (gFamilyCar) { channel="traccar:device:myserver:car1:commandResultTime" }
+Switch   FamilyCar_WebConnect     "Check FOTA now"     (gFamilyCar)
+```
+
+```javascript
+// A button that makes a Teltonika contact FOTA WEB now (a waiting firmware or
+// configuration is fetched at once instead of at the next check-in)
+rules.JSRule({
+  name: 'Car - web_connect button',
+  triggers: [triggers.ItemCommandTrigger('FamilyCar_WebConnect', 'ON')],
+  execute: () => {
+    items.getItem('FamilyCar_Command').sendCommand('web_connect');
+    items.getItem('FamilyCar_WebConnect').postUpdate('OFF');
+  }
+});
+
+// Read a parameter back: the reply "Param ID:105 Value:13700" arrives on FamilyCar_Command_Result
+items.getItem('FamilyCar_Command').sendCommand('getparam 105');
+```
+
+`FamilyCar_Command_Status` shows `delivered 21:34:02`, `queued 21:34:02 (tracker
+offline, ...)`, `refused: not in allowedCommands - ...` or `failed: HTTP ...`.
+
+The ignition threshold has a channel of its own, `lowVoltageLevel`, whose state is
+what the tracker confirmed, with a safety net - the CAN adapter page's section 12
+shows it keeping an EV's tracker awake through a charge.
+
+---
+
+## Eco Driving per Trip (1.3.0)
+
+With the Teltonika Eco Driving scenario on, the alarm channel delivers each hard
+acceleration, braking and cornering; the binding counts them per trip (the ignition
+going from off to on resets the counters) and shows the last event's size and length.
+
+```openhab
+Number      FamilyCar_Eco_Accelerations "Hard accelerations [%d]" (gFamilyCar) { channel="traccar:device:myserver:car1:ecoAccelerations" }
+Number      FamilyCar_Eco_Brakings      "Hard brakings [%d]"      (gFamilyCar) { channel="traccar:device:myserver:car1:ecoBrakings" }
+Number      FamilyCar_Eco_Cornerings    "Hard cornerings [%d]"    (gFamilyCar) { channel="traccar:device:myserver:car1:ecoCornerings" }
+Number      FamilyCar_Eco_Last_Value    "Last event [%.2f g]"     (gFamilyCar) { channel="traccar:device:myserver:car1:ecoLastValue" }
+Number:Time FamilyCar_Eco_Last_Duration "Lasted [%.1f s]"         (gFamilyCar) { channel="traccar:device:myserver:car1:ecoLastDuration", unit="s" }
+DateTime    FamilyCar_Eco_Trip_Start    "Trip since"              (gFamilyCar) { channel="traccar:device:myserver:car1:ecoTripStart" }
+```
+
+```javascript
+// A line in the log at the end of each trip
+rules.JSRule({
+  name: 'Car - driving style per trip',
+  triggers: [triggers.ItemStateChangeTrigger('FamilyCar_Ignition', 'ON', 'OFF')],
+  execute: () => {
+    const n = (name) => items.getItem(name).numericState || 0;
+    console.info('trip since ' + items.getItem('FamilyCar_Eco_Trip_Start').state + ': '
+      + n('FamilyCar_Eco_Accelerations') + ' hard accelerations, '
+      + n('FamilyCar_Eco_Brakings') + ' hard brakings, '
+      + n('FamilyCar_Eco_Cornerings') + ' hard cornerings');
+  }
+});
+```
+
+The thresholds are the tracker's (Configurator → Features → Eco Driving; 2.2 / 2.5 /
+2.1 m/s² as shipped on an FMC650), and so is the source: the accelerometer, which the
+tracker calibrates itself over the first drives, or GPS.

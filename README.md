@@ -907,6 +907,14 @@ String FamilyCar_Protocol "Protocol [%s]" (gFamilyCar)
 Switch FamilyCar_Ignition "Ignition [MAP(ignition.map):%s]" (gFamilyCar) 
     {channel="traccar:device:myserver:car1:ignition"}
 
+// Alarms from the tracker (1.2.0) and commands to it (1.3.0)
+String   FamilyCar_Alarm          "Alarm [%s]"         (gFamilyCar) {channel="traccar:device:myserver:car1:alarm"}
+DateTime FamilyCar_Alarm_Time     "Alarm at"           (gFamilyCar) {channel="traccar:device:myserver:car1:alarmTime"}
+String   FamilyCar_Command        "Command [%s]"       (gFamilyCar) {channel="traccar:device:myserver:car1:commandSend"}
+String   FamilyCar_Command_Status "Command status [%s]" (gFamilyCar) {channel="traccar:device:myserver:car1:commandStatus"}
+String   FamilyCar_Command_Result "Tracker reply [%s]" (gFamilyCar) {channel="traccar:device:myserver:car1:commandResult"}
+Number   FamilyCar_Eco_Brakings   "Hard brakings this trip [%d]" (gFamilyCar) {channel="traccar:device:myserver:car1:ecoBrakings"}
+
 Number:Time FamilyCar_Hours "Engine Hours [%.1f h]" (gFamilyCar) 
     {channel="traccar:device:myserver:car1:hours", unit="h"}
 
@@ -940,6 +948,9 @@ sitemap tracking label="Vehicle Tracking" {
         
         Text item=FamilyCar_Status label="Status [%s]" icon="status"
         Text item=FamilyCar_LastUpdate label="Last Update" icon="time"
+        Text item=FamilyCar_Alarm label="Alarm [%s]" icon="alarm"
+        Text item=FamilyCar_Alarm_Time label="Alarm at" icon="time"
+        Text item=FamilyCar_Command_Result label="Tracker reply [%s]" icon="text"
         
         Text item=FamilyCar_Speed label="Speed [%.1f %unit%]" icon="speed"
         Text item=FamilyCar_Course label="Course [%.0f°]" icon="wind"
