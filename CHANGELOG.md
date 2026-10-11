@@ -21,6 +21,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   after a lowering that lasted too long. For an EV whose DC-DC drops the 12 V
   below a driving threshold while charging.
 
+- **Eco-driving counters per trip**: `ecoAccelerations`, `ecoBrakings`,
+  `ecoCornerings` (reset when the ignition goes on), `ecoLastValue`,
+  `ecoLastDuration`, `ecoTripStart` - from the alarm channel, for the tracker's
+  own Eco Driving scenario.
+
 ### Fixed
 - **A position is applied once.** Traccar forwards the same position again inside
   an alarm or geofence event, and the API poll can hand over one the webhook

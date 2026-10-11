@@ -229,6 +229,15 @@ channel is not filled.
 | `lowVoltageLevel` | Number:ElectricPotential (writable) | The tracker's Low Voltage Level (Teltonika parameter 105), the ignition threshold with the supply voltage as ignition source. Send a voltage (`12.3 V`): the binding sends `setparam 105:12300` and sets the state only from the tracker's confirmed reply, so the state is what the tracker runs with. A `getparam 105` sent through `commandSend` updates it too. "Config same for all parameters" (the value was already set) counts as confirmed | 13.7 V |
 | `lowVoltageStatus` | String | `13700 mV confirmed 21:23:33`, `12300 mV sent 13:00:05, waiting for the tracker`, `13700 mV restored by the binding 03:12:00 after 14 h lowered, ...`, `send failed ...` | 13700 mV confirmed 21:23:33 |
 
+### Eco Driving (1.3.0)
+
+| Channel | Type | Description | Example State |
+|---------|------|-------------|---------------|
+| `ecoAccelerations`, `ecoBrakings`, `ecoCornerings` | Number | Hard accelerations / brakings / cornerings this trip, counted from the alarm channel (`hardAcceleration`, `hardBraking`, `hardCornering`); reset when the ignition goes from off to on | 2 |
+| `ecoLastValue` | Number | The last event's size as the tracker reports it (Teltonika AVL 254 / 100: g for acceleration and braking) | 0.31 |
+| `ecoLastDuration` | Number:Time | How long the last event lasted (AVL 243) | 1.2 s |
+| `ecoTripStart` | DateTime | When the counters were last reset | 2026-10-11T15:44:04+02:00 |
+
 Why a voltage channel of its own: an EV's DC-DC holds the 12 V near the battery's resting level
 while charging, below a threshold meant for driving, so the tracker calls the ignition off and
 stops sending CAN values halfway through the charge. A rule lowers the threshold for the charge

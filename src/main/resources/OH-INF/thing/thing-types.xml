@@ -145,6 +145,12 @@
 			<channel id="commandResultTime" typeId="command-result-time"/>
 			<channel id="lowVoltageLevel" typeId="low-voltage-level"/>
 			<channel id="lowVoltageStatus" typeId="low-voltage-status"/>
+			<channel id="ecoAccelerations" typeId="eco-count"/>
+			<channel id="ecoBrakings" typeId="eco-count"/>
+			<channel id="ecoCornerings" typeId="eco-count"/>
+			<channel id="ecoLastValue" typeId="eco-last-value"/>
+			<channel id="ecoLastDuration" typeId="eco-last-duration"/>
+			<channel id="ecoTripStart" typeId="eco-trip-start"/>
 			<!-- OBD-II Channels (Teltonika FMM920 with Bluetooth OBD-II dongle) -->
 			<channel id="obdDtcCount" typeId="obd-dtc-count"/>
 			<channel id="obdEngineLoad" typeId="obd-engine-load"/>
@@ -809,6 +815,38 @@
 		<label>Low Voltage Status</label>
 		<description>"12300 mV confirmed HH:mm", "12300 mV sent HH:mm, waiting for the tracker", "13700 mV restored
 			by the binding after 14 h" ...</description>
+		<state readOnly="true"/>
+	</channel-type>
+
+	<channel-type id="eco-count">
+		<item-type>Number</item-type>
+		<label>Eco Driving Events This Trip</label>
+		<description>How many hard accelerations / hard brakings / hard cornerings the tracker's Eco Driving scenario raised
+			since the ignition last went on (the counters reset when the ignition goes from off to on; on a device
+			without an ignition channel they count since the binding started). Fed by the alarm channel:
+			hardAcceleration, hardBraking, hardCornering</description>
+		<state readOnly="true" pattern="%d"/>
+	</channel-type>
+
+	<channel-type id="eco-last-value">
+		<item-type>Number</item-type>
+		<label>Eco Driving Last Value</label>
+		<description>The size of the last eco-driving event as the tracker reports it (Teltonika AVL 254, divided by
+			100: g for acceleration and braking, the cornering figure in the same scale)</description>
+		<state readOnly="true" pattern="%.2f"/>
+	</channel-type>
+
+	<channel-type id="eco-last-duration">
+		<item-type>Number:Time</item-type>
+		<label>Eco Driving Last Duration</label>
+		<description>How long the last eco-driving event lasted (Teltonika AVL 243)</description>
+		<state readOnly="true" pattern="%.1f s"/>
+	</channel-type>
+
+	<channel-type id="eco-trip-start">
+		<item-type>DateTime</item-type>
+		<label>Eco Driving Trip Start</label>
+		<description>When the counters were last reset - the ignition going on</description>
 		<state readOnly="true"/>
 	</channel-type>
 

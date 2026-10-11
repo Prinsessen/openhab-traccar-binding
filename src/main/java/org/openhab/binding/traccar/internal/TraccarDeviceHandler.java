@@ -127,6 +127,12 @@ public class TraccarDeviceHandler extends BaseThingHandler {
     /** The level (mV) last sent through the channel and not yet confirmed, or -1. */
     private long lowVoltagePendingMv = -1;
 
+    // ---- eco driving counters per trip (alarm channel: hardAcceleration / hardBraking / hardCornering) ----
+    private int ecoAccelerations = 0;
+    private int ecoBrakings = 0;
+    private int ecoCornerings = 0;
+    private @Nullable Boolean lastIgnition;
+
     private final ThingTypeRegistry thingTypeRegistry;
 
     public TraccarDeviceHandler(Thing thing, ThingTypeRegistry thingTypeRegistry) {
@@ -308,6 +314,45 @@ public class TraccarDeviceHandler extends BaseThingHandler {
             confirmLowVoltage(lowVoltagePendingMv, when);
         }
         return true;
+    }
+
+    /** Counts an eco-driving alarm for the trip and shows the event's size and length. */
+    private void countEcoEvent(String alarm, Map<String, Object> attributes) {
+        boolean counted = false;
+        if (alarm.contains("hardAcceleration")) {
+            updateState(CHANNEL_ECO_ACCELERATIONS, new DecimalType(++ecoAccelerations));
+            counted = true;
+        }
+        if (alarm.contains("hardBraking")) {
+            updateState(CHANNEL_ECO_BRAKINGS, new DecimalType(++ecoBrakings));
+            counted = true;
+        }
+        if (alarm.contains("hardCornering")) {
+            updateState(CHANNEL_ECO_CORNERINGS, new DecimalType(++ecoCornerings));
+            counted = true;
+        }
+        if (!counted) {
+            return;
+        }
+        // Teltonika AVL 254 = the event's value x100 (g for acceleration and braking), 243 = its duration (ms)
+        Object value = attributes.get("io254");
+        if (value instanceof Number n) {
+            updateState(CHANNEL_ECO_LAST_VALUE, new DecimalType(n.doubleValue() / 100.0));
+        }
+        Object duration = attributes.get("io243");
+        if (duration instanceof Number n) {
+            updateState(CHANNEL_ECO_LAST_DURATION, new QuantityType<>(n.doubleValue() / 1000.0, Units.SECOND));
+        }
+    }
+
+    private void resetEcoCounters(ZonedDateTime at) {
+        ecoAccelerations = 0;
+        ecoBrakings = 0;
+        ecoCornerings = 0;
+        updateState(CHANNEL_ECO_ACCELERATIONS, DecimalType.ZERO);
+        updateState(CHANNEL_ECO_BRAKINGS, DecimalType.ZERO);
+        updateState(CHANNEL_ECO_CORNERINGS, DecimalType.ZERO);
+        updateState(CHANNEL_ECO_TRIP_START, new DateTimeType(at));
     }
 
     private void confirmLowVoltage(long mv, Instant when) {
@@ -832,10 +877,15 @@ public class TraccarDeviceHandler extends BaseThingHandler {
                 updateState(CHANNEL_ACTIVITY, new StringType(activityObj.toString()));
             }
 
-            // Ignition status
+            // Ignition status - and a trip boundary for the eco-driving counters: off -> on starts a trip
             Object ignitionObj = attributes.get("ignition");
-            if (ignitionObj instanceof Boolean) {
-                updateState(CHANNEL_IGNITION, OnOffType.from((Boolean) ignitionObj));
+            if (ignitionObj instanceof Boolean ignition) {
+                updateState(CHANNEL_IGNITION, OnOffType.from(ignition));
+                Boolean previous = lastIgnition;
+                if (ignition && previous != null && !previous) {
+                    resetEcoCounters(deviceTime != null ? deviceTime : ZonedDateTime.now());
+                }
+                lastIgnition = ignition;
             }
 
             // Alarm: Traccar's one attribute for every scenario the tracker raises itself (Teltonika:
@@ -852,6 +902,7 @@ public class TraccarDeviceHandler extends BaseThingHandler {
                         new DateTimeType(deviceTime != null ? deviceTime : ZonedDateTime.now()));
                 logger.info("Device {}: alarm {} ({})", profile().deviceId, alarm.trim(),
                         deviceTime != null ? deviceTime : "no device time");
+                countEcoEvent(alarm, attributes);
             }
 
             // GPS Satellites
