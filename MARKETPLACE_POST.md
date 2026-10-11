@@ -4,6 +4,11 @@ This binding integrates a [Traccar](https://www.traccar.org/) server with openHA
 
 Traccar itself speaks over 200 GPS protocols and supports more than 2000 devices, so anything it can see, openHAB can now react to.
 
+## New in 1.3.0 (in testing)
+
+- **Commands to the tracker** -- `commandSend` with the thing's `allowedCommands` allow-list, `commandStatus` (delivered / queued / refused), `commandResult` with the tracker's reply. A Teltonika `getparam`, `setparam`, `web_connect`, `getver` from a rule, confirmed by the device.
+- **`lowVoltageLevel`** -- the ignition threshold as a voltage channel whose state is what the tracker confirmed, with a safety net. Keeps an EV's tracker awake through a charge, and never for good.
+
 ## New in 1.2.0
 
 - **CAN adapter support** -- a car with a Teltonika ALL-CAN300 or LV-CAN200 on an FMx6 tracker (FMC650 and relatives) reports its own battery level, range, odometer, speed, doors, locks, gear, lights and warning lamps. Switched on per device with `canAdapter=lvcan`; every other device keeps exactly the channels it had. Tested on a Toyota bZ4X, and the README marks every channel tested or untested.

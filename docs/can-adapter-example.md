@@ -57,7 +57,11 @@ Bridge traccar:server:myserver "Traccar" [
         deviceId=2,                 // Traccar's device id, not the IMEI
         deviceFamily="fmx6",        // FMC650 and relatives
         canAdapter="lvcan",         // adds the can# channel group
-        gearParkWhenOff=true        // an EV or automatic: not ready = parked (P, 0 km/h)
+        gearParkWhenOff=true,       // an EV or automatic: not ready = parked (P, 0 km/h)
+        // 1.3.0, for section 12: what a rule may send to the tracker, and the ignition
+        // threshold's safety net (13.7 V back by itself after 14 h lowered)
+        allowedCommands="^(getparam [0-9;]+|getver|web_connect)$|^setparam 105:[0-9]+$",
+        lowVoltageLevelNormal=13700, lowVoltageRestoreHours=14
     ]
 }
 ```
@@ -375,7 +379,67 @@ With `gearParkWhenOff=true` the car's speed is set to 0 as soon as a record
 says the car is not ready, so a parked car does not keep the last speed it
 reported while rolling into its space.
 
-## 12. Troubleshooting
+## 12. Rule: keep the tracker awake through a charge (1.3.0)
+
+The tracker's ignition is its supply voltage above the Low Voltage Level (Teltonika
+parameter 105, 13.7 V here), and with the ignition off it sends no CAN values. An
+EV's DC-DC lifts the 12 V to 14 V for the first half hour of a charge and then
+settles near the battery's resting level, 12.6-12.9 V - below the threshold. The
+state of charge then freezes halfway through the charge. Measured on a bZ4X: the
+12 V went down to 12.39 V in the last part of a charge, so the lowered level is
+12.3 V; it must not stay there, because a full 12 V battery rests at 12.5-12.8 V
+and the tracker would never sleep.
+
+The rule decides *when*; the binding does the sending, confirms it from the
+tracker's reply and restores the normal level by itself after
+`lowVoltageRestoreHours` if the rule never does.
+
+```openhab
+Number:ElectricPotential Car_Ignition_Threshold "Ignition threshold [%.2f V]" { channel="traccar:device:myserver:car:lowVoltageLevel", unit="V" }
+String                   Car_Ignition_Threshold_Status "Threshold [%s]"       { channel="traccar:device:myserver:car:lowVoltageStatus" }
+```
+
+```javascript
+const { rules, triggers, items } = require('openhab');
+const CHARGING = '12.3 V', NORMAL = '13.7 V';
+
+rules.JSRule({
+  name: 'Car - keep the tracker awake while charging',
+  triggers: [
+    triggers.ItemStateChangeTrigger('Car_Can_Charge_Cable'),
+    triggers.ItemStateChangeTrigger('Car_Can_Charging'),
+    triggers.GenericCronTrigger('0 * * * * ?')
+  ],
+  execute: () => {
+    const level = items.getItem('Car_Ignition_Threshold');          // what the tracker CONFIRMED
+    const lowered = level.numericState !== null && level.numericState < 13;
+    const cableIn = items.getItem('Car_Can_Charge_Cable').state === 'ON';
+    const charging = items.getItem('Car_Can_Charging').state === 'ON';
+    // the plug-in handshake lifts the 12 V for a moment, so the cable bit arrives even from a
+    // sleeping tracker; lower on it, and the charge keeps the tracker awake from then on
+    if (cableIn && charging && !lowered) level.sendCommand(CHARGING);
+    // back when the cable is out; your charger's "complete" is a better signal if you have one
+    if (!cableIn && lowered) level.sendCommand(NORMAL);
+  }
+});
+```
+
+What to add from experience: restore at once when the tracker's ignition flaps (four
+changes in a minute means the 12 V sits on the threshold - the DC-DC has stopped), and
+after a grace period of "not charging with the cable in" (the car pauses for seconds
+on its own, and a car waiting for a cheap hour should not keep its tracker up all
+night). `Car_Ignition_Threshold_Status` shows `sent`, `confirmed` or `send failed` as
+the binding sees it.
+
+## 13. Troubleshooting
+
+**A command is refused.** `commandStatus` says `refused: not in allowedCommands` -
+the thing's `allowedCommands` expression did not match. It allows nothing until set.
+
+**A command stays `queued`.** The tracker is asleep; Traccar delivers it when the
+tracker next connects (a Teltonika in deep sleep wakes every send period). The
+reply comes through the webhook, or the binding's poll for `commandResultTimeout`
+seconds.
 
 **No `can#` channels on the thing.** Check `canAdapter="lvcan"` and look for
 `CAN channel(s) added` in the log after the thing initialized.

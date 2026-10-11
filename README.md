@@ -78,6 +78,19 @@ This binding supports the following thing types:
 - Instant notifications (no polling delay)
 - Perfect for automating garage doors, lights, security systems
 
+### Commands to the Tracker (1.3.0)
+- Send a text command to the tracker through Traccar from an item (`commandSend`): a Teltonika
+  `getparam 105`, `setparam 105:12300`, `web_connect`, `getver` ...
+- Only what the thing's `allowedCommands` expression allows is sent - a tracker accepts anything,
+  including a new server address
+- `commandStatus` says whether Traccar delivered it (tracker connected) or queued it until the
+  tracker next connects; `commandResult` / `commandResultTime` carry the tracker's reply, from the
+  webhook (event forwarding) or a poll of Traccar's events
+- `lowVoltageLevel`: the tracker's ignition threshold (Teltonika parameter 105) as a voltage
+  channel whose state is what the tracker *confirmed* - with a safety net that restores the normal
+  level after a configurable time, so a tracker left lowered for a charge never stays awake for
+  good
+
 ### Dual Update Mechanism
 - **Polling**: Configurable interval (minimum 10 seconds) for position updates
 - **Webhooks**: Real-time position updates + instant event notifications
@@ -134,6 +147,10 @@ The binding automatically discovers devices configured in your Traccar server:
 | `canAdapter` | text | No | `none` | `lvcan` for a Teltonika CAN adapter (ALL-CAN300, LV-CAN200) - adds the [CAN channels](#can-adapter-teltonika-all-can300--lv-can200) |
 | `obdDongle` | text | No | `bluetooth` | `none` stops io30-io48 being read as OBD-II data (advanced) |
 | `gearParkWhenOff` | boolean | No | `false` | CAN only: the car counts as parked whenever it is not ready - gear P, speed and pedal 0 (advanced) |
+| `allowedCommands` | text | No | *(empty)* | Regular expression a command on `commandSend` must match; empty = nothing is sent. The `lowVoltageLevel` channel is not subject to it. Example for a Teltonika: `^(getparam [0-9;]+\|getver\|getstatus\|web_connect)$\|^setparam (100\|101\|105\|1000):[0-9]+$` (advanced) |
+| `commandResultTimeout` | integer | No | `300` | Seconds the binding keeps asking Traccar for the tracker's reply after a command; 0 = never asks (replies still come through the webhook) (advanced) |
+| `lowVoltageLevelNormal` | integer | No | `0` | The tracker's normal Low Voltage Level in mV (Teltonika parameter 105); the safety net of `lowVoltageLevel` restores it after `lowVoltageRestoreHours`. 0 = no safety net (advanced) |
+| `lowVoltageRestoreHours` | integer | No | `14` | Hours a lowered Low Voltage Level may stand before the binding restores the normal one (advanced) |
 
 **Note**: Beacon parameters only apply to devices with BLE capability (e.g., Teltonika FMM920).
 
@@ -200,6 +217,24 @@ channel is not filled.
 |---------|------|-------------|---------------|
 | `gpsSatellites` | Number | Number of GPS satellites | 8 |
 | `gsmSignal` | Number:Dimensionless | GSM/cellular signal strength | 75% |
+
+### Commands (1.3.0)
+
+| Channel | Type | Description | Example State |
+|---------|------|-------------|---------------|
+| `commandSend` | String (writable) | A text command for the tracker, sent through Traccar as a custom command when it matches `allowedCommands`. The state is the last command sent | setparam 105:12300 |
+| `commandStatus` | String | What became of it: `delivered HH:mm:ss` (the tracker was connected), `queued HH:mm:ss (tracker offline, Traccar delivers when it connects)`, `refused: not in allowedCommands - ...`, `failed: HTTP ...` | queued 21:34:02 (tracker offline, ...) |
+| `commandResult` | String | The tracker's last reply (Traccar's `commandResult` event). Stays until the next reply | New value 105:12300; |
+| `commandResultTime` | DateTime | When that reply was received; changes with every reply, also when the text is the same | 2026-10-11T21:34:13+02:00 |
+| `lowVoltageLevel` | Number:ElectricPotential (writable) | The tracker's Low Voltage Level (Teltonika parameter 105), the ignition threshold with the supply voltage as ignition source. Send a voltage (`12.3 V`): the binding sends `setparam 105:12300` and sets the state only from the tracker's confirmed reply, so the state is what the tracker runs with. A `getparam 105` sent through `commandSend` updates it too. "Config same for all parameters" (the value was already set) counts as confirmed | 13.7 V |
+| `lowVoltageStatus` | String | `13700 mV confirmed 21:23:33`, `12300 mV sent 13:00:05, waiting for the tracker`, `13700 mV restored by the binding 03:12:00 after 14 h lowered, ...`, `send failed ...` | 13700 mV confirmed 21:23:33 |
+
+Why a voltage channel of its own: an EV's DC-DC holds the 12 V near the battery's resting level
+while charging, below a threshold meant for driving, so the tracker calls the ignition off and
+stops sending CAN values halfway through the charge. A rule lowers the threshold for the charge
+(the *when* - a charger's status, the car's own charge-cable bit) and puts it back after; the
+binding does the sending, the queueing, the reply matching, and restores the normal level by
+itself if the rule never does. `docs/can-adapter-example.md` has the rule.
 
 ### Geofencing
 

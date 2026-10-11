@@ -5,6 +5,27 @@ All notable changes to the Traccar binding will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Commands to the tracker through the binding**: `commandSend` (a text command,
+  sent through Traccar as a custom command when it matches the thing's new
+  `allowedCommands` expression - nothing is sent by default), `commandStatus`
+  (delivered / queued until the tracker connects / refused / failed),
+  `commandResult` and `commandResultTime` (the tracker's reply, from Traccar's
+  event forwarding or a poll of its events for `commandResultTimeout` seconds).
+- **`lowVoltageLevel` and `lowVoltageStatus`**: the tracker's Low Voltage Level
+  (Teltonika parameter 105, the ignition threshold) as a writable voltage channel
+  whose state is set only from the tracker's confirmed reply; `lowVoltageLevelNormal`
+  / `lowVoltageRestoreHours` give it a safety net that restores the normal level
+  after a lowering that lasted too long. For an EV whose DC-DC drops the 12 V
+  below a driving threshold while charging.
+
+### Fixed
+- **A position is applied once.** Traccar forwards the same position again inside
+  an alarm or geofence event, and the API poll can hand over one the webhook
+  already delivered; positions are now deduplicated on Traccar's id.
+
 ## [1.2.0] - 2026-10-11
 
 ### Added
