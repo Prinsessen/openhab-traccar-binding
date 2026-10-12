@@ -4,10 +4,12 @@ This binding integrates a [Traccar](https://www.traccar.org/) server with openHA
 
 Traccar itself speaks over 200 GPS protocols and supports more than 2000 devices, so anything it can see, openHAB can now react to.
 
-## New in 1.3.0 (in testing)
+## New in 1.3.0
 
 - **Commands to the tracker** -- `commandSend` with the thing's `allowedCommands` allow-list, `commandStatus` (delivered / queued / refused), `commandResult` with the tracker's reply. A Teltonika `getparam`, `setparam`, `web_connect`, `getver` from a rule, confirmed by the device.
 - **`lowVoltageLevel`** -- the ignition threshold as a voltage channel whose state is what the tracker confirmed, with a safety net. Keeps an EV's tracker awake through a charge, and never for good.
+- **Eco-driving counters per trip** -- hard accelerations, brakings and cornerings since the ignition went on, with the last event's size and length. (Check the tracker's Accelerometer Auto Calibration is on; off, the events come out late and merged.)
+- **A position is applied once** -- the same record forwarded again inside an alarm or geofence event no longer counts twice.
 
 ## New in 1.2.0
 
@@ -149,7 +151,7 @@ If you have been running an earlier build with webhooks enabled, assume your
 
 ## Resources
 
-- **Download JAR (v1.2.0):** [org.openhab.binding.traccar-1.2.0.jar](https://github.com/Prinsessen/openhab-traccar-binding/releases/download/v1.2.0/org.openhab.binding.traccar-1.2.0.jar)
+- **Download JAR (v1.3.0):** [org.openhab.binding.traccar-1.3.0.jar](https://github.com/Prinsessen/openhab-traccar-binding/releases/download/v1.3.0/org.openhab.binding.traccar-1.3.0.jar)
 - **Source code:** [github.com/Prinsessen/openhab-traccar-binding](https://github.com/Prinsessen/openhab-traccar-binding)
 - **Worked examples:** [EXAMPLES.md](https://github.com/Prinsessen/openhab-traccar-binding/blob/main/EXAMPLES.md) — geofencing, presence, speed, battery, multi-vehicle, and finding out what a new device sends
 - **Full documentation:** [README.md](https://github.com/Prinsessen/openhab-traccar-binding/blob/main/README.md)
