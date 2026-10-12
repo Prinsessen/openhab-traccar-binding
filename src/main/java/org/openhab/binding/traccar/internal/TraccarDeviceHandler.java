@@ -110,6 +110,12 @@ public class TraccarDeviceHandler extends BaseThingHandler {
      * the API poll can hand over a position the webhook already delivered.
      */
     private long lastPositionId = -1;
+    /**
+     * Fallback key of the newest position applied: device time (ms) and coordinates. The position
+     * Traccar forwards in real time does not always carry the id the stored one has, so the id alone
+     * let the same record through twice (an eco-driving event counted twice, 2026-10-12).
+     */
+    private String lastPositionKey = "";
 
     // ---- commands to the tracker (Command channel, Low Voltage Level channel) ----
     private static final DateTimeFormatter HHMMSS = DateTimeFormatter.ofPattern("HH:mm:ss");
@@ -657,7 +663,18 @@ public class TraccarDeviceHandler extends BaseThingHandler {
                     logger.debug("Device {}: position {} already applied, skipped", profile().deviceId, id);
                     return;
                 }
-                lastPositionId = id;
+                if (id > 0) {
+                    lastPositionId = id;
+                }
+            }
+            if (deviceTime != null) {
+                String key = deviceTime.toInstant().toEpochMilli() + "/" + position.get("latitude") + "/"
+                        + position.get("longitude");
+                if (key.equals(lastPositionKey)) {
+                    logger.debug("Device {}: record of {} already applied, skipped", profile().deviceId, deviceTime);
+                    return;
+                }
+                lastPositionKey = key;
             }
             ZonedDateTime newest = newestRecord;
             if (deviceTime != null && newest != null && deviceTime.isBefore(newest)) {
