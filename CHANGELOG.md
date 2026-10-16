@@ -5,7 +5,7 @@ All notable changes to the Traccar binding will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.3.0] - unreleased (tag after the charge test)
+## [1.3.0] - 2026-10-16
 
 ### Added
 - **Commands to the tracker through the binding**: `commandSend` (a text command,
@@ -29,7 +29,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - **A position is applied once.** Traccar forwards the same position again inside
   an alarm or geofence event, and the API poll can hand over one the webhook
-  already delivered; positions are now deduplicated on Traccar's id.
+  already delivered; positions are now deduplicated on Traccar's id, and on the
+  device time and coordinates as well, because the position Traccar forwards in
+  real time does not always carry the id the stored one has (an eco-driving event
+  was counted twice).
 
 ## [1.2.0] - 2026-10-11
 
