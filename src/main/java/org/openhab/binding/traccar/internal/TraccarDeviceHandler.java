@@ -1401,9 +1401,9 @@ public class TraccarDeviceHandler extends BaseThingHandler {
         // Handle geofence entry/exit events from webhook
         Object eventTypeObj = event.get("type");
         if (eventTypeObj instanceof String eventType) {
-            updateState(CHANNEL_GEOFENCE_EVENT, new StringType(eventType));
-
-            // Update geofence name if available
+            // ID and name BEFORE the event: rules trigger on geofenceEvent and read geofenceId
+            // in the same moment, so with the event first a rule could read the previous fence's
+            // ID and act on the wrong fence. Not seen to go wrong, ordered so it cannot.
             Object geofenceObj = eventData.get("geofence");
             if (geofenceObj instanceof Map<?, ?>) {
                 @SuppressWarnings("unchecked")
@@ -1425,6 +1425,7 @@ public class TraccarDeviceHandler extends BaseThingHandler {
                             geofenceName, idObj);
                 }
             }
+            updateState(CHANNEL_GEOFENCE_EVENT, new StringType(eventType));
 
             // Also update position if included in the event
             Object positionObj = eventData.get("position");
