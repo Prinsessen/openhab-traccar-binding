@@ -5,6 +5,15 @@ All notable changes to the Traccar binding will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.1] - 2026-10-23
+
+### Fixed
+- **Geofence ID and name before the event.** `geofenceEvent` was updated before
+  `geofenceId` and `geofenceName`, so a rule triggered by the event and reading the
+  ID at once could read the previous fence's ID (arriving home from work, the
+  work fence's). The ID and name are now updated first. Not seen to go wrong in
+  practice; ordered so it cannot.
+
 ## [1.3.0] - 2026-10-16
 
 ### Added
