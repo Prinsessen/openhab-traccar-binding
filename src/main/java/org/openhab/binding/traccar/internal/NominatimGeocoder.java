@@ -45,9 +45,10 @@ public class NominatimGeocoder {
     // Cache structure: "lat,lon" -> CachedAddress
     private final Map<String, CachedAddress> addressCache = new ConcurrentHashMap<>();
 
-    // Rate limiting: OSM Nominatim requires max 1 request per second
-    private long lastRequestTime = 0;
-    private static final long MIN_REQUEST_INTERVAL_MS = 1000;
+    // OSM's limit (1 request/s) is per client, not per device: one budget for every geocoder in the
+    // binding, with a pause after a 429 (NominatimThrottle).
+    private static final NominatimThrottle THROTTLE = new NominatimThrottle();
+    private static final String USER_AGENT = "openHAB-Traccar-Binding (+https://github.com/Prinsessen/openhab-traccar-binding)";
 
     /**
      * Cached address entry with coordinates
@@ -94,21 +95,20 @@ public class NominatimGeocoder {
             return cached.address;
         }
 
-        // Rate limiting
-        synchronized (this) {
-            long now = System.currentTimeMillis();
-            long timeSinceLastRequest = now - lastRequestTime;
-            if (timeSinceLastRequest < MIN_REQUEST_INTERVAL_MS) {
-                long sleepTime = MIN_REQUEST_INTERVAL_MS - timeSinceLastRequest;
-                try {
-                    logger.debug("Rate limiting: waiting {}ms", sleepTime);
-                    Thread.sleep(sleepTime);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    return null;
-                }
+        // Rate limiting, shared by all devices; nothing is sent while paused after a 429
+        long wait = THROTTLE.reserve(System.currentTimeMillis());
+        if (wait < 0) {
+            logger.debug("Nominatim paused after a 429 - no request for {},{}", latitude, longitude);
+            return null;
+        }
+        if (wait > 0) {
+            try {
+                logger.debug("Rate limiting: waiting {}ms", wait);
+                Thread.sleep(wait);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return null;
             }
-            lastRequestTime = System.currentTimeMillis();
         }
 
         // Make API request
@@ -174,19 +174,32 @@ public class NominatimGeocoder {
                     .connectTimeout(java.time.Duration.ofSeconds(10)).build();
 
             java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder().uri(java.net.URI.create(url))
-                    .header("User-Agent", "openHAB-Traccar-Binding/1.0").timeout(java.time.Duration.ofSeconds(10)).GET()
-                    .build();
+                    .header("User-Agent", USER_AGENT).timeout(java.time.Duration.ofSeconds(10)).GET().build();
 
             java.net.http.HttpResponse<String> response = client.send(request,
                     java.net.http.HttpResponse.BodyHandlers.ofString());
 
-            if (response.statusCode() == 200) {
+            int status = response.statusCode();
+            long retryAfter = response.headers().firstValue("Retry-After").map(v -> {
+                try {
+                    return Long.parseLong(v.trim());
+                } catch (NumberFormatException e) {
+                    return 0L;
+                }
+            }).orElse(0L);
+            long pause = THROTTLE.onResponse(status, System.currentTimeMillis(), retryAfter);
+            if (status == 200) {
                 JsonObject json = gson.fromJson(response.body(), JsonObject.class);
                 if (json != null && json.has("address")) {
                     return formatAddress(json.getAsJsonObject("address"));
                 }
+            } else if (status == 429 || status == 503) {
+                if (pause > 0) {
+                    logger.warn("Nominatim rate limit ({}) - geocoding paused for {} s for all devices", status,
+                            pause / 1000);
+                }
             } else {
-                logger.warn("Nominatim returned status {}: {}", response.statusCode(), response.body());
+                logger.warn("Nominatim returned status {}: {}", status, response.body());
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();

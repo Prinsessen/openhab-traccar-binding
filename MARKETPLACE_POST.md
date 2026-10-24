@@ -4,6 +4,12 @@ This binding integrates a [Traccar](https://www.traccar.org/) server with openHA
 
 Traccar itself speaks over 200 GPS protocols and supports more than 2000 devices, so anything it can see, openHAB can now react to.
 
+## New in 1.3.2
+
+- **Nominatim is asked at most once a second in total**, whatever the number of
+  devices, and a `429 Too Many Requests` pauses geocoding (60 s, doubling to an
+  hour, or the server's `Retry-After`) instead of being retried on every position.
+
 ## New in 1.3.1
 
 - **Geofence ID and name are updated before the event**, so a rule triggered by
@@ -156,7 +162,7 @@ If you have been running an earlier build with webhooks enabled, assume your
 
 ## Resources
 
-- **Download JAR (v1.3.1):** [org.openhab.binding.traccar-1.3.1.jar](https://github.com/Prinsessen/openhab-traccar-binding/releases/download/v1.3.1/org.openhab.binding.traccar-1.3.1.jar)
+- **Download JAR (v1.3.2):** [org.openhab.binding.traccar-1.3.2.jar](https://github.com/Prinsessen/openhab-traccar-binding/releases/download/v1.3.2/org.openhab.binding.traccar-1.3.2.jar)
 - **Source code:** [github.com/Prinsessen/openhab-traccar-binding](https://github.com/Prinsessen/openhab-traccar-binding)
 - **Worked examples:** [EXAMPLES.md](https://github.com/Prinsessen/openhab-traccar-binding/blob/main/EXAMPLES.md) — geofencing, presence, speed, battery, multi-vehicle, and finding out what a new device sends
 - **Full documentation:** [README.md](https://github.com/Prinsessen/openhab-traccar-binding/blob/main/README.md)
