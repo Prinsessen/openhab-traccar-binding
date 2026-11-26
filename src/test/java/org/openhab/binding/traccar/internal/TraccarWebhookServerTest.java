@@ -88,7 +88,8 @@ class TraccarWebhookServerTest {
 
     @SuppressWarnings("unchecked")
     private static boolean isEvent(@Nullable Map<String, Object> data, String type) {
-        return data != null && data.get("event") instanceof Map<?, ?> e && type.equals(((Map<String, Object>) e).get("type"));
+        return data != null && data.get("event") instanceof Map<?, ?> e
+                && type.equals(((Map<String, Object>) e).get("type"));
     }
 
     @Test
@@ -103,8 +104,7 @@ class TraccarWebhookServerTest {
 
     @Test
     void getCarriesTheJsonAsAParameter() throws Exception {
-        HttpResponse<String> r = send("GET", "/webhook?json=" + URLEncoder.encode(EVENT, StandardCharsets.UTF_8),
-                null);
+        HttpResponse<String> r = send("GET", "/webhook?json=" + URLEncoder.encode(EVENT, StandardCharsets.UTF_8), null);
         assertEquals(200, r.statusCode());
         verify(handler, timeout(5000)).handleWebhookEvent(argThat(d -> isEvent(d, "geofenceEnter")));
     }
