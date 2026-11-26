@@ -4,6 +4,17 @@ The Traccar binding integrates [Traccar](https://www.traccar.org/) GPS tracking 
 
 Traccar is an open-source GPS tracking system that supports over 200 GPS protocols and 2000+ GPS tracking devices.
 
+## Which version for which openHAB
+
+openHAB 5.3 moved from Jetty 9 to Jetty 12 (Jakarta EE 10), and a binding built for one does not start on the other. There are two lines, with the same features:
+
+| openHAB | binding | branch |
+|---|---|---|
+| 5.3 and its snapshots/milestones | 2.0.x | `openhab-5.3` |
+| 5.0 - 5.2 | 1.3.x | `main` |
+
+On 5.3, a 1.3.x JAR stays INSTALLED with `Unresolved requirement: Import-Package: javax.servlet` in the log: install 2.0.x instead.
+
 ## Documentation
 
 - **[BLE Beacon Quick Start](docs/beacon-quickstart.md)** - 5-minute setup guide for beacon tracking
