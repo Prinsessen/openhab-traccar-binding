@@ -12,7 +12,6 @@
  */
 package org.openhab.binding.traccar.internal;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -20,14 +19,16 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
+import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.Callback;
 import org.openhab.core.common.NamedThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -100,30 +101,32 @@ public class TraccarWebhookServer {
         }
     }
 
-    private class WebhookHandler extends AbstractHandler {
+    /**
+     * Jetty 12 core handler (openHAB 5.3). Jetty 9's servlet-style {@code AbstractHandler} and
+     * {@code javax.servlet} are gone; the answers are the same as before (held by
+     * {@code TraccarWebhookServerTest}): 200 with {"status":"ok"}, 404 for another path, 405 for another
+     * method, 503 when the queue is full or stopped, 500 when the body cannot be read.
+     */
+    @NonNullByDefault({})
+    private class WebhookHandler extends Handler.Abstract {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
-                throws IOException, ServletException {
-            if (!"/webhook".equals(target)) {
-                response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-                baseRequest.setHandled(true);
-                return;
+        public boolean handle(Request request, Response response, Callback callback) {
+            if (!"/webhook".equals(Request.getPathInContext(request))) {
+                return status(response, callback, HttpStatus.NOT_FOUND_404);
             }
 
             // Accept both POST and GET methods (Traccar uses different methods for events vs positions)
-            if (!"POST".equals(request.getMethod()) && !"GET".equals(request.getMethod())) {
-                response.setStatus(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-                baseRequest.setHandled(true);
-                return;
+            String method = request.getMethod();
+            if (!"POST".equals(method) && !"GET".equals(method)) {
+                return status(response, callback, HttpStatus.METHOD_NOT_ALLOWED_405);
             }
 
             try {
-                String body = "";
                 Map<String, Object> eventData = null;
 
                 // For POST requests, read JSON from body
-                if ("POST".equals(request.getMethod())) {
-                    body = new String(request.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+                if ("POST".equals(method)) {
+                    String body = Content.Source.asString(request, StandardCharsets.UTF_8);
                     /*
                      * DEBUG, not INFO, and this is a security fix rather than
                      * tidiness. The body is the whole Traccar payload, and for
@@ -138,10 +141,10 @@ public class TraccarWebhookServer {
                     }.getType());
                 }
                 // For GET requests, Traccar sends JSON as 'json' parameter
-                else if ("GET".equals(request.getMethod())) {
-                    String jsonParam = request.getParameter("json");
+                else {
+                    String jsonParam = Request.extractQueryParameters(request).getValue("json");
                     if (jsonParam != null && !jsonParam.isEmpty()) {
-                        logger.debug("Received webhook (GET): {}", jsonParam);   // see above: carries credentials
+                        logger.debug("Received webhook (GET): {}", jsonParam); // see above: carries credentials
                         eventData = gson.fromJson(jsonParam, new TypeToken<Map<String, Object>>() {
                         }.getType());
                     } else {
@@ -174,23 +177,25 @@ public class TraccarWebhookServer {
                     } catch (RejectedExecutionException e) {
                         // full or stopped: say so, and Traccar's forward.retry sends positions again
                         logger.warn("Webhook queue full or stopped ({}), asking Traccar to retry", e.getMessage());
-                        response.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
-                        baseRequest.setHandled(true);
-                        return;
+                        return status(response, callback, HttpStatus.SERVICE_UNAVAILABLE_503);
                     }
                 }
 
-                // Send response
-                response.setContentType("application/json");
-                response.setStatus(HttpServletResponse.SC_OK);
-                response.getWriter().write("{\"status\":\"ok\"}");
-                baseRequest.setHandled(true);
-
+                response.setStatus(HttpStatus.OK_200);
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "application/json");
+                Content.Sink.write(response, true, "{\"status\":\"ok\"}", callback);
+                return true;
             } catch (Exception e) {
                 logger.warn("Failed to process webhook: {}", e.getMessage());
-                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-                baseRequest.setHandled(true);
+                return status(response, callback, HttpStatus.INTERNAL_SERVER_ERROR_500);
             }
+        }
+
+        /** An answer without a body, as the Jetty 9 receiver gave. */
+        private boolean status(Response response, Callback callback, int code) {
+            response.setStatus(code);
+            callback.succeeded();
+            return true;
         }
     }
 }

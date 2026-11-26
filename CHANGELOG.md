@@ -5,6 +5,23 @@ All notable changes to the Traccar binding will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0-beta.1] - 2026-11-26
+
+For **openHAB 5.3** (and its snapshots and milestones from 2026-11-22 on). Same
+features as 1.3.2; 1.3.x stays the line for openHAB 5.0 - 5.2.
+
+### Changed
+- **Jetty 12 / Jakarta EE 10.** openHAB 5.3 replaced Jetty 9 and `javax.servlet`,
+  so the 1.3.x JAR does not start there (`Unresolved requirement: Import-Package:
+  javax.servlet`). The webhook receiver is now a Jetty 12 core handler (no servlet
+  API at all), and the Traccar API client uses the Jetty 12 client API.
+  The receiver answers as before - 200 `{"status":"ok"}`, 404 for another path, 405
+  for another method, 503 when its queue is full, 500 for a body it cannot read -
+  held by `TraccarWebhookServerTest`, which runs a real socket and passes on both
+  the 1.3.x receiver and this one.
+- Built against openhab-addons `main` 2cd1f77e73 (5.3.0-SNAPSHOT, Jetty 12.1.14).
+  Not yet run on a live openHAB 5.3 by the author (who runs 5.2): reports welcome.
+
 ## [1.3.2] - 2026-10-24
 
 ### Fixed

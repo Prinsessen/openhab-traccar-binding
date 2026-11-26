@@ -24,9 +24,10 @@ import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.util.StringContentProvider;
+import org.eclipse.jetty.client.StringRequestContent;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.slf4j.Logger;
@@ -66,7 +67,7 @@ public class TraccarApiClient {
     public boolean authenticate() {
         try {
             ContentResponse response = httpClient.newRequest(baseUrl + "/api/server").method(HttpMethod.GET)
-                    .header("Authorization", authHeader).timeout(10, TimeUnit.SECONDS).send();
+                    .headers(h -> h.put(HttpHeader.AUTHORIZATION, authHeader)).timeout(10, TimeUnit.SECONDS).send();
 
             if (response.getStatus() == HttpStatus.OK_200) {
                 logger.debug("Successfully authenticated with Traccar server");
@@ -89,7 +90,7 @@ public class TraccarApiClient {
     public @Nullable List<Map<String, Object>> getDevices() {
         try {
             ContentResponse response = httpClient.newRequest(baseUrl + "/api/devices").method(HttpMethod.GET)
-                    .header("Authorization", authHeader).timeout(10, TimeUnit.SECONDS).send();
+                    .headers(h -> h.put(HttpHeader.AUTHORIZATION, authHeader)).timeout(10, TimeUnit.SECONDS).send();
 
             if (response.getStatus() == HttpStatus.OK_200) {
                 String content = response.getContentAsString();
@@ -114,8 +115,8 @@ public class TraccarApiClient {
     public @Nullable Map<String, Object> getLatestPosition(int deviceId) {
         try {
             ContentResponse response = httpClient.newRequest(baseUrl + "/api/positions").method(HttpMethod.GET)
-                    .param("deviceId", String.valueOf(deviceId)).header("Authorization", authHeader)
-                    .timeout(10, TimeUnit.SECONDS).send();
+                    .param("deviceId", String.valueOf(deviceId))
+                    .headers(h -> h.put(HttpHeader.AUTHORIZATION, authHeader)).timeout(10, TimeUnit.SECONDS).send();
 
             if (response.getStatus() == HttpStatus.OK_200) {
                 String content = response.getContentAsString();
@@ -144,8 +145,8 @@ public class TraccarApiClient {
     public @Nullable List<Map<String, Object>> getGeofences(int deviceId) {
         try {
             ContentResponse response = httpClient.newRequest(baseUrl + "/api/geofences").method(HttpMethod.GET)
-                    .param("deviceId", String.valueOf(deviceId)).header("Authorization", authHeader)
-                    .timeout(10, TimeUnit.SECONDS).send();
+                    .param("deviceId", String.valueOf(deviceId))
+                    .headers(h -> h.put(HttpHeader.AUTHORIZATION, authHeader)).timeout(10, TimeUnit.SECONDS).send();
 
             if (response.getStatus() == HttpStatus.OK_200) {
                 String content = response.getContentAsString();
@@ -169,7 +170,8 @@ public class TraccarApiClient {
     public @Nullable Map<String, Object> getDevice(int deviceId) {
         try {
             ContentResponse response = httpClient.newRequest(baseUrl + "/api/devices/" + deviceId)
-                    .method(HttpMethod.GET).header("Authorization", authHeader).timeout(10, TimeUnit.SECONDS).send();
+                    .method(HttpMethod.GET).headers(h -> h.put(HttpHeader.AUTHORIZATION, authHeader))
+                    .timeout(10, TimeUnit.SECONDS).send();
 
             if (response.getStatus() == HttpStatus.OK_200) {
                 String content = response.getContentAsString();
@@ -183,6 +185,7 @@ public class TraccarApiClient {
         }
         return null;
     }
+
     /**
      * Sends a custom (text) command to a device through Traccar.
      *
@@ -194,9 +197,10 @@ public class TraccarApiClient {
             Map<String, Object> body = Map.of("deviceId", deviceId, "type", "custom", "attributes",
                     Map.of("data", data));
             ContentResponse response = httpClient.newRequest(baseUrl + "/api/commands/send").method(HttpMethod.POST)
-                    .header("Authorization", authHeader).header("Accept", "application/json")
-                    .content(new StringContentProvider(gson.toJson(body)), "application/json")
-                    .timeout(15, TimeUnit.SECONDS).send();
+                    .headers(
+                            h -> h.put(HttpHeader.AUTHORIZATION, authHeader).put(HttpHeader.ACCEPT, "application/json"))
+                    .body(new StringRequestContent("application/json", gson.toJson(body))).timeout(15, TimeUnit.SECONDS)
+                    .send();
             int status = response.getStatus();
             if (status != HttpStatus.OK_200 && status != HttpStatus.ACCEPTED_202) {
                 logger.debug("Command to device {} not sent, status {}: {}", deviceId, status,
@@ -218,7 +222,8 @@ public class TraccarApiClient {
             ContentResponse response = httpClient.newRequest(baseUrl + "/api/reports/events").method(HttpMethod.GET)
                     .param("deviceId", String.valueOf(deviceId)).param("type", "commandResult")
                     .param("from", since.toString()).param("to", Instant.now().plusSeconds(60).toString())
-                    .header("Authorization", authHeader).header("Accept", "application/json")
+                    .headers(
+                            h -> h.put(HttpHeader.AUTHORIZATION, authHeader).put(HttpHeader.ACCEPT, "application/json"))
                     .timeout(15, TimeUnit.SECONDS).send();
             if (response.getStatus() == HttpStatus.OK_200) {
                 List<Map<String, Object>> events = gson.fromJson(response.getContentAsString(),
