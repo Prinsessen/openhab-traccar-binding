@@ -57,9 +57,12 @@ So `raw-attributes` shows the lot, sorted, as `name=value` pairs. Fit the hardwa
 - A Traccar server, cloud or self-hosted, reachable from openHAB
 - An account on it with API access
 - For webhook push: a port openHAB can listen on, and Traccar configured to forward to it
-- openHAB 5.x. Built against the 5.2 add-ons reactor and running there; it has
-  not been tried on 4.x, and an add-on built against 5.2 generally will not
-  resolve on an older core
+- openHAB 5.0 - 5.2: this version (1.3.x). Built against the 5.2 add-ons reactor
+  and running there; it has not been tried on 4.x
+- **openHAB 5.3** (Jetty 12): 1.3.x does not start there (`Unresolved requirement:
+  Import-Package: javax.servlet`) - use
+  [2.0.0-beta.1](https://github.com/Prinsessen/openhab-traccar-binding/releases/tag/v2.0.0-beta.1),
+  same features, built for 5.3
 
 ## Supported Things
 
@@ -163,6 +166,7 @@ If you have been running an earlier build with webhooks enabled, assume your
 ## Resources
 
 - **Download JAR (v1.3.2):** [org.openhab.binding.traccar-1.3.2.jar](https://github.com/Prinsessen/openhab-traccar-binding/releases/download/v1.3.2/org.openhab.binding.traccar-1.3.2.jar)
+- **For openHAB 5.3:** [org.openhab.binding.traccar-2.0.0-beta.1.jar](https://github.com/Prinsessen/openhab-traccar-binding/releases/download/v2.0.0-beta.1/org.openhab.binding.traccar-2.0.0-beta.1.jar) (beta)
 - **Source code:** [github.com/Prinsessen/openhab-traccar-binding](https://github.com/Prinsessen/openhab-traccar-binding)
 - **Worked examples:** [EXAMPLES.md](https://github.com/Prinsessen/openhab-traccar-binding/blob/main/EXAMPLES.md) — geofencing, presence, speed, battery, multi-vehicle, and finding out what a new device sends
 - **Full documentation:** [README.md](https://github.com/Prinsessen/openhab-traccar-binding/blob/main/README.md)
