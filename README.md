@@ -1087,6 +1087,12 @@ Edit `/opt/traccar/conf/traccar.xml` (or equivalent):
 
 **Replace `YOUR_OPENHAB_IP`** with your openHAB server's IP address (e.g., `192.168.1.50`).
 
+> **Traccar forwards to one address.** `forward.url` and `event.forward.url` each take a single URL. If two openHAB
+> installations use the same Traccar server (for example a test system on a newer openHAB), only the one in these
+> URLs receives webhooks: on the other, the geofence channels stay NULL, while position, ignition and the other
+> polled channels work on both. To test a second installation, point the URLs at it for a while, or add a
+> notification in Traccar's web interface (below) with a "Web Request" to the second installation's URL.
+
 Restart Traccar:
 ```bash
 sudo systemctl restart traccar
@@ -1121,11 +1127,26 @@ Bridge traccar:server:myserver [ webhookPort=8090 ]
 
 #### 1. Test with curl
 
+A position:
+
 ```bash
 curl -X POST http://localhost:8090/webhook \
   -H "Content-Type: application/json" \
   -d '{"position":{"id":1,"deviceId":1,"latitude":55.676,"longitude":12.568}}'
 ```
+
+A geofence event, without driving anywhere. Replace `DEVICEID` with the `deviceId` of one of your device things;
+it answers `{"status":"ok"}`, Geofence Name becomes "Test", Geofence Event "geofenceEnter", and openhab.log shows
+`Device DEVICEID geofenceEnter geofence: Test (ID: 1)`:
+
+```bash
+curl -X POST http://localhost:8090/webhook \
+  -H "Content-Type: application/json" \
+  -d '{"event":{"type":"geofenceEnter","deviceId":DEVICEID,"eventTime":"2026-11-26T18:00:00.000+00:00"},"geofence":{"id":1,"name":"Test"}}'
+```
+
+Copy commands from a code block: a forum or a word processor turns the straight quotes into curly ones, and curl
+then sends something that is not JSON.
 
 #### 2. Monitor Webhook Traffic
 
@@ -1910,6 +1931,20 @@ The binding gracefully handles missing attributes - channels simply remain NULL 
    ```bash
    curl -u "user:pass" "https://your-traccar-server/api/positions?deviceId=1"
    ```
+
+### Geofence channels stay NULL while positions update
+
+**Symptoms**: position, ignition and last update work, Geofence Event and Geofence Name stay NULL.
+
+**Cause**: positions are polled from Traccar's API; geofence events only arrive by webhook. Traccar's
+`event.forward.url` points somewhere else - typically another openHAB installation (Traccar forwards to one URL),
+or the address is wrong or blocked by a firewall.
+
+**Solutions**:
+1. Check `event.forward.url` in `traccar.xml` (or the notification's URL in the web interface) points at this
+   openHAB: `http://THIS_OPENHAB_IP:8090/webhook`.
+2. Check `Traccar webhook server started on port 8090` is in openhab.log.
+3. Send the geofence test event from [Testing Webhooks](#testing-webhooks) from another machine on the network.
 
 ### Webhooks not working
 
